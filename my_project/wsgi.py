@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Add project directory to sys.path
-path = '/home/yourusername/PGI1'
+path = '/home/RishijManna/PGI1'
 if path not in sys.path:
     sys.path.append(path)
 
