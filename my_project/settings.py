@@ -22,7 +22,8 @@ RENDER_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 ALLOWED_HOSTS = (
     [RENDER_HOSTNAME] if RENDER_HOSTNAME else ['.onrender.com', 'localhost', '127.0.0.1']
 )
-
+DEBUG = False
+ALLOWED_HOSTS = ['RishijManna.pythonanywhere.com']
 # =======================
 # Applications
 # =======================
