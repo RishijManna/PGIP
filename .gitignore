@@ -3,7 +3,7 @@
 __pycache__/
 db.sqlite3
 /media
-
+INSTRUCTIONS
 # Environment
 .env
 .venv/
