@@ -6,7 +6,7 @@ In today’s digital landscape, individuals often face challenges in keeping tra
 
 Users can create accounts and provide details such as age, gender, education, employment type, income status, domicile state, and more. Leveraging this data, the system dynamically filters and presents relevant schemes, exam notifications, and tax updates aligned with the user’s eligibility and interests.
 
-The platform integrates AI-powered recommendation engines and rule-based filtering mechanisms to ensure accurate and personalized content delivery. Users also benefit from:
+Users also benefit from:
 
 Personalized alerts and notifications
 
