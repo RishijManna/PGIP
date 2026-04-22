@@ -1,221 +1,215 @@
+{% extends "base.html" %}
+
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personalized Recommendations | PGIP</title>
-    <link rel="stylesheet" href="{% static 'css/RECoMmE.css' %}">
-  
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <!-- Navigation Bar -->
-    <div class="navbar">
-        <div class="nav-brand">
-            
-            <i class="fas fa-graduation-cap"></i>
-            <span>PGIP</span>
-        </div>
-        <div class="nav-left">
-            <a href="{% url 'dashboard' %}"><i class="fas fa-th-large"></i> Dashboard</a>
-            <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
-            <a href="{% url 'calendar' %}"><i class="fas fa-calendar"></i> Calendar</a>
-            <a href="{% url 'recommendations' %}" class="active"><i class="fas fa-lightbulb"></i> Recommendations</a>
-            <a href="{% url 'contact' %}"><i class="fas fa-envelope"></i> Contact Us</a>
-        </div>
-        <div class="nav-right">
-            <button id="dark-toggle" class="dark-btn"><i class="fas fa-moon"></i></button>
-            {% if user.is_authenticated %}
-                <a href="{% url 'logout' %}" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            {% else %}
-                <a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Login</a>
-            {% endif %}
-        </div>
-        
-    </div>
 
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Header Section -->
-        <div class="recom-header">
-            <h1><i class="fas fa-lightbulb"></i> Personalized Recommendations</h1>
-            <p>Based on your profile and interests, we've curated these opportunities just for you</p>
-            
-            {% if interests %}
-                <div class="interests-tags">
-                    <span>Your interests:</span>
-                    {% for interest in interests %}
-                        <span class="interest-tag">{{ interest }}</span>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        </div>
+{% block title %}
+Personalized Recommendations
+{% endblock %}
 
-        <!-- Recommendations Grid -->
-        <div class="recom-grid">
-            <!-- Exams Section -->
-            <div class="recom-card">
-                <div class="card-header">
-                    <i class="fas fa-file-alt"></i>
-                    <h2>Recommended Exams</h2>
-                </div>
-                <div class="card-body">
-                    {% if exams %}
-                        <div class="recommendation-list">
-                            {% for exam in exams %}
-                                <div class="recommendation-item">
-                                    <div class="recom-icon">
-                                        <i class="fas fa-graduation-cap"></i>
-                                    </div>
-                                    <div class="recom-details">
-                                        <h3>{{ exam.name }}</h3>
-                                        <p class="recom-category">{{ exam.category }}</p>
-                                        <div class="recom-meta">
-                                            <span><i class="far fa-calendar"></i> Application deadline: Soon</span>
-                                        </div>
-                                    </div>
-                                    <div class="recom-actions">
-                                        <!-- Updated link -->
-                                        <a href="{% url 'details' 'exam' exam.id %}" class="btn-more">View Details</a>
-                                        
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-search"></i>
-                            <h3>No exam recommendations found</h3>
-                            <p>Update your profile with more interests to get personalized recommendations</p>
-                            <a href="{% url 'profile' %}" class="btn-primary">Update Profile</a>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
+{% block extra_css %}
 
-            <!-- Schemes Section -->
-            <div class="recom-card">
-                <div class="card-header">
-                    <i class="fas fa-hand-holding-usd"></i>
-                    <h2>Recommended Schemes</h2>
-                </div>
-                <div class="card-body">
-                    {% if schemes %}
-                        <div class="recommendation-list">
-                            {% for scheme in schemes %}
-                                <div class="recommendation-item">
-                                    <div class="recom-icon">
-                                        <i class="fas fa-hand-holding-heart"></i>
-                                    </div>
-                                    <div class="recom-details">
-                                        <h3>{{ scheme.name }}</h3>
-                                        <p class="recom-category">{{ scheme.category }}</p>
-                                        <div class="recom-meta">
-                                            <span><i class="fas fa-users"></i> Eligibility: Check requirements</span>
-                                        </div>
-                                    </div>
-                                    <div class="recom-actions">
-                                        <!-- Updated link -->
-                                        <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-more">View Details</a>
-                                        
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-search"></i>
-                            <h3>No scheme recommendations found</h3>
-                            <p>Update your profile with more interests to get personalized recommendations</p>
-                            <a href="{% url 'profile' %}" class="btn-primary">Update Profile</a>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
 
-        <!-- Additional Resources Section -->
-        <div class="resources-section">
-            <h2>Enhance Your Opportunities</h2>
-            <div class="resources-grid">
-                <div class="resource-card">
-                    <i class="fas fa-book-open"></i>
-                    <h3>Preparation Resources</h3>
-                    <p>Access study materials and practice tests for your recommended exams</p>
-                    <a href="#" class="btn-outline">Explore Resources</a>
-                </div>
-                <div class="resource-card">
-                    <i class="fas fa-clipboard-list"></i>
-                    <h3>Application Guide</h3>
-                    <p>Step-by-step guidance on how to apply for exams and schemes</p>
-                    <a href="#" class="btn-outline">View Guide</a>
-                </div>
-                <div class="resource-card">
-                    <i class="fas fa-bell"></i>
-                    <h3>Set Reminders</h3>
-                    <p>Get notified about important deadlines and new opportunities</p>
-                    <a href="{% url 'calendar' %}" class="btn-outline">Set Reminder</a>
-                </div>
-            </div>
-        </div>
-    </div>
 
-<footer class="footer">
-    <div class="footer-links"> 
-        © 2025 PGIP | <a href="#">Policy</a> | <a href="{% url 'contact' %}">Contact Us</a>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <!-- Header -->
+
+    <div class="recom-header">
+
+        <h1>
+            <i class="fas fa-lightbulb"></i>
+            Personalized Recommendations
+        </h1>
+
         <p>
-            We provide free job alert service to job seekers in India on latest government jobs and important scheme details
+            Based on your profile and interests,
+            we've curated these opportunities
+            just for you
         </p>
+
+        {% if interests %}
+
+        <div class="interests-tags">
+
+            <span>
+                Your interests:
+            </span>
+
+            {% for interest in interests %}
+
+            <span class="interest-tag">
+
+                {{ interest }}
+
+            </span>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
     </div>
-</footer>
+
+
+    <!-- Recommendations Grid -->
+
+    <div class="recom-grid">
+
+        <!-- Exams -->
+
+        <div class="recom-card">
+
+            <div class="card-header">
+
+                <i class="fas fa-file-alt"></i>
+
+                <h2>
+                    Recommended Exams
+                </h2>
+
+            </div>
+
+            <div class="card-body">
+
+                {% if exams %}
+
+                {% for exam in exams %}
+
+                <div class="recommendation-item">
+
+                    <div class="recom-icon">
+
+                        <i class="fas fa-graduation-cap"></i>
+
+                    </div>
+
+                    <div class="recom-details">
+
+                        <h3>
+
+                            {{ exam.name }}
+
+                        </h3>
+
+                        <p>
+
+                            {{ exam.category }}
+
+                        </p>
+
+                    </div>
+
+                    <div class="recom-actions">
+
+                        <a href="{% url 'details' 'exam' exam.id %}"
+                           class="btn-more">
+
+                            View Details
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+                {% else %}
+
+                <p>
+                    No exam recommendations found.
+                </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- Schemes -->
+
+        <div class="recom-card">
+
+            <div class="card-header">
+
+                <i class="fas fa-hand-holding-usd"></i>
+
+                <h2>
+                    Recommended Schemes
+                </h2>
+
+            </div>
+
+            <div class="card-body">
+
+                {% if schemes %}
+
+                {% for scheme in schemes %}
+
+                <div class="recommendation-item">
+
+                    <div class="recom-icon">
+
+                        <i class="fas fa-hand-holding-heart"></i>
+
+                    </div>
+
+                    <div class="recom-details">
+
+                        <h3>
+
+                            {{ scheme.name }}
+
+                        </h3>
+
+                        <p>
+
+                            {{ scheme.category }}
+
+                        </p>
+
+                    </div>
+
+                    <div class="recom-actions">
+
+                        <a href="{% url 'details' 'scheme' scheme.id %}"
+                           class="btn-more">
+
+                            View Details
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+                {% else %}
+
+                <p>
+                    No scheme recommendations found.
+                </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 
 <script src="{% static 'js/Dark.js' %}"></script>
-<script>
-    // Mobile menu toggle
-    document.querySelector('.mobile-menu-btn').addEventListener('click', function() {
-        document.querySelector('.nav-left').classList.toggle('show');
-        document.querySelector('.nav-right').classList.toggle('show');
-    });
 
-    // Save recommendation functionality
-    document.querySelectorAll('.btn-save').forEach(button => {
-        button.addEventListener('click', function() {
-            this.classList.toggle('saved');
-            this.innerHTML = this.classList.contains('saved') ? 
-                '<i class="fas fa-bookmark"></i>' : 
-                '<i class="far fa-bookmark"></i>';
-            
-            const item = this.closest('.recommendation-item');
-            const title = item.querySelector('h3').textContent;
-            const action = this.classList.contains('saved') ? 'saved' : 'unsaved';
-            
-            showNotification(`${action.charAt(0).toUpperCase() + action.slice(1)} "${title}"`);
-        });
-    });
-
-    function showNotification(message) {
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.innerHTML = `
-            <i class="fas fa-check-circle"></i>
-            <span>${message}</span>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.classList.add('show');
-        }, 10);
-        
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
-    }
-</script>
-</body>
-</html>
+{% endblock %}

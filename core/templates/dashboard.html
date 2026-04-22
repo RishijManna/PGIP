@@ -1,388 +1,657 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 {% load static %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    
-    <link rel="stylesheet" href="{% static 'css/DashBoarD.css' %}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-</head>
 
-<body>
-    <!-- Details Panel -->
-    <div class="details-panel" id="detailsPanel">
-        <div class="details-header">
-            <h3 id="detailsTitle">Details</h3>
-            <button class="close-details" id="closeDetails">&times;</button>
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+
+<!-- Search Bar -->
+<div class="search-bar">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <form method="get" action="{% url 'search_results' %}" style="display: flex; width: 100%;">
+            <input type="text" name="q" placeholder="Search exams or schemes..." value="{{ query|default:'' }}">
+            <button type="submit" class="search-btn">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Page Grid Layout -->
+<div class="page-grid">
+    
+    <!-- Sidebar - Filter Box -->
+    <div class="sidebar">
+        
+        <div class="filter-header">
+            <span><i class="fas fa-sliders-h"></i> FILTERS</span>
         </div>
-        <div class="details-content" id="detailsContent">
-            <!-- Details will be loaded here -->
+        
+        <form method="get" action="{% url 'dashboard' %}" class="filter-section" id="filterForm">
+            
+            <!-- Top Apply Filters Button -->
+            <div class="filter-actions-top">
+                <button type="submit" class="btn-apply-filters">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+            </div>
+            
+            <!-- Reset All Link -->
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <a href="{% url 'dashboard' %}" id="reset-link">
+                    <i class="fas fa-undo-alt"></i> Reset All
+                </a>
+            </div>
+        
+            
+            <!-- Category - Updated from models.py EXAM CATEGORY_CHOICES and SCHEME_CATEGORY_CHOICES -->
+            <div class="filter-group">
+                <h4><i class="fas fa-tags"></i> Category</h4>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Engineering">
+                    <span>Engineering</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Medical">
+                    <span>Medical</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Banking">
+                    <span>Banking</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Defense">
+                    <span>Defense</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Civil Services">
+                    <span>Civil Services</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Teaching">
+                    <span>Teaching</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Law">
+                    <span>Law</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Management">
+                    <span>Management</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Science">
+                    <span>Science</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Design">
+                    <span>Design</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Employment">
+                    <span>Employment</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Insurance">
+                    <span>Insurance</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Food Corporation">
+                    <span>Food Corporation</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Agriculture">
+                    <span>Agriculture</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Hotel Management">
+                    <span>Hotel Management</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Environment">
+                    <span>Environment</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Education">
+                    <span>Education</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Health">
+                    <span>Health</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Finance">
+                    <span>Finance</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="General">
+                    <span>General</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Entrepreneurship">
+                    <span>Entrepreneurship</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Housing">
+                    <span>Housing</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Welfare">
+                    <span>Welfare</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="category" value="Pension">
+                    <span>Pension</span>
+                </label>
+            </div>
+            
+            <!-- Exam Type - Updated from models.py EXAM_TYPE_CHOICES -->
+            <div class="filter-group">
+                <h4><i class="fas fa-pencil-alt"></i> Exam Type</h4>
+                <label class="filter-label">
+                    <input type="checkbox" name="exam_type" value="Government">
+                    <span>Government</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="exam_type" value="Private">
+                    <span>Private</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="exam_type" value="State Level">
+                    <span>State Level</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="exam_type" value="National Level">
+                    <span>National Level</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="exam_type" value="University Level">
+                    <span>University Level</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="exam_type" value="Professional">
+                    <span>Professional</span>
+                </label>
+            </div>
+            
+            <!-- Scheme Type - Updated from models.py SCHEME_TYPE_CHOICES -->
+            <div class="filter-group">
+                <h4><i class="fas fa-hand-holding-heart"></i> Scheme Type</h4>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Central Government">
+                    <span>Central Government</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="State Government">
+                    <span>State Government</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Welfare">
+                    <span>Welfare</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Scholarship">
+                    <span>Scholarship</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Loan">
+                    <span>Loan</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Employment">
+                    <span>Employment</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Training">
+                    <span>Training</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Pension">
+                    <span>Pension</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Insurance">
+                    <span>Insurance</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Financial Assistance">
+                    <span>Financial Assistance</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Subsidy">
+                    <span>Subsidy</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="scheme_type" value="Allowance">
+                    <span>Allowance</span>
+                </label>
+            </div>
+            
+            <!-- Location - Updated from models.py LOCATION_CHOICES -->
+            <div class="filter-group">
+                <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Delhi">
+                    <span>Delhi</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Karnataka">
+                    <span>Karnataka</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="West Bengal">
+                    <span>West Bengal</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Hyderabad">
+                    <span>Hyderabad</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="All India">
+                    <span>All India</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Multiple Cities">
+                    <span>Multiple Cities</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Maharashtra">
+                    <span>Maharashtra</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Telangana">
+                    <span>Telangana</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Andhra Pradesh">
+                    <span>Andhra Pradesh</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Odisha">
+                    <span>Odisha</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Gujarat">
+                    <span>Gujarat</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Chhattisgarh">
+                    <span>Chhattisgarh</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Madhya Pradesh">
+                    <span>Madhya Pradesh</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Tamil Nadu">
+                    <span>Tamil Nadu</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Uttarakhand">
+                    <span>Uttarakhand</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Kerala">
+                    <span>Kerala</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Ahmedabad">
+                    <span>Ahmedabad</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Rural India">
+                    <span>Rural India</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="location" value="Coastal Cities">
+                    <span>Coastal Cities</span>
+                </label>
+            </div>
+            
+            <!-- Mode - Updated from models.py MODE_CHOICES -->
+            <div class="filter-group">
+                <h4><i class="fas fa-laptop"></i> Mode</h4>
+                <label class="filter-label">
+                    <input type="checkbox" name="mode" value="Online">
+                    <span>Online</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="mode" value="Offline">
+                    <span>Offline</span>
+                </label>
+            </div>
+            
+            <!-- Exam Eligibility - Updated from models.py ELIGIBILITY_CHOICES -->
+            <div class="filter-group">
+                <h4><i class="fas fa-graduation-cap"></i> Exam Eligibility</h4>
+                <label class="filter-label">
+                    <input type="checkbox" name="e_eligibility" value="10th Pass">
+                    <span>10th Pass</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="e_eligibility" value="12th Pass">
+                    <span>12th Pass</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="e_eligibility" value="Graduate">
+                    <span>Graduate</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="e_eligibility" value="Post Graduate">
+                    <span>Post Graduate</span>
+                </label>
+            </div>
+            
+            <!-- Scheme Eligibility - Updated from models.py SCHEME_ELIGIBILITY_CHOICES -->
+            <div class="filter-group">
+                <h4><i class="fas fa-user-check"></i> Scheme Eligibility</h4>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="10th Pass">
+                    <span>10th Pass</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="12th Pass">
+                    <span>12th Pass</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="Graduate">
+                    <span>Graduate</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="Postgraduate">
+                    <span>Postgraduate</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="Open to All">
+                    <span>Open to All</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="BPL Families">
+                    <span>BPL Families</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="SC/ST/Women">
+                    <span>SC/ST/Women</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="Farmers">
+                    <span>Farmers</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="Girl Students">
+                    <span>Girl Students</span>
+                </label>
+                <label class="filter-label">
+                    <input type="checkbox" name="s_eligibility" value="Senior Citizens">
+                    <span>Senior Citizens</span>
+                </label>
+            </div>
+            
+            <!-- Bottom Apply Filters Button -->
+            <div class="filter-reset">
+                <button type="submit" class="btn-reset">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+            </div>
+            
+        </form>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="content">
+        
+        <!-- Upcoming Exams Section -->
+        <h2 class="section-title">
+            <i class="fas fa-calendar-alt"></i> Upcoming Exams
+            <span class="title-underline"></span>
+        </h2>
+        
+        {% if exams %}
+        <div class="card-grid">
             {% for exam in exams %}
-            <div class="exam-details details-item" id="exam-{{ exam.id }}" style="display: none;">
-                <h4>{{ exam.name }}</h4>
-                <div class="details-section">
-                    <p><strong>Type:</strong> {{ exam.exam_type }}</p>
-                    <p><strong>Category:</strong> {{ exam.category }}</p>
-                    <p><strong>Location:</strong> {{ exam.location }}</p>
-                    <p><strong>Mode:</strong> {{ exam.mode }}</p>
-                    <p><strong>Date:</strong> {{ exam.date }}</p>
-                    <p><strong>Eligibility:</strong> {{ exam.e_eligibility }}</p>
+            <div class="card card-animate">
+                <div class="card-header">
+                    <h3>{{ exam.name }}</h3>
+                    <div class="card-date">
+                        <i class="far fa-calendar"></i> {{ exam.date|date:"F d, Y" }}
+                    </div>
+                    <div class="card-type">
+                        <i class="fas fa-tag"></i> {{ exam.exam_type|default:"Exam" }}
+                    </div>
                 </div>
-                <div class="additional-info">
-                    <h5>Additional Information</h5>
-                    <p>{{ exam.additional_info }}</p>
+                
+                <div class="card-tags">
+                    <span class="tag tag-primary">{{ exam.category }}</span>
+                    {% if exam.mode %}
+                    <span class="tag tag-mode">{{ exam.mode }}</span>
+                    {% endif %}
+                    <span class="tag tag-location">
+                        <i class="fas fa-map-pin"></i> {{ exam.location }}
+                    </span>
+                    {% if exam.e_eligibility %}
+                    <span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>
+                    {% endif %}
                 </div>
-
-                <!-- ✅ Apply Now Button -->
-                <div class="details-actions">
-                    <a href="#" class="apply-btn">Apply Now</a>
+                
+                <div class="card-footer">
+                    <a href="{% url 'details' 'exam' exam.id %}" class="btn-details">
+                        <i class="fas fa-info-circle"></i> View Details
+                    </a>
+                    <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="item_type" value="exam">
+                        <input type="hidden" name="item_id" value="{{ exam.id }}">
+                        <button type="submit" class="btn-calendar">
+                            <i class="far fa-calendar-plus"></i> Add to Calendar
+                        </button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
-
+        </div>
+        {% else %}
+        <div class="no-data-message">
+            <i class="fas fa-calendar-times"></i>
+            <h3>No Upcoming Exams</h3>
+            <p>There are no exams matching your criteria at this time.</p>
+        </div>
+        {% endif %}
+        
+        <!-- Government Schemes Section -->
+        <h2 class="section-title" style="margin-top: 3rem;">
+            <i class="fas fa-landmark"></i> Government Schemes
+            <span class="title-underline"></span>
+        </h2>
+        
+        {% if schemes %}
+        <div class="card-grid">
             {% for scheme in schemes %}
-            <div class="scheme-details details-item" id="scheme-{{ scheme.id }}" style="display: none;">
-                <h4>{{ scheme.name }}</h4>
-                <div class="details-section">
-                    <p><strong>Type:</strong> {{ scheme.scheme_type }}</p>
-                    <p><strong>Category:</strong> {{ scheme.category }}</p>
-                    <p><strong>Location:</strong> {{ scheme.location }}</p>
-                    <p><strong>Date:</strong> {{ scheme.date }}</p>
-                    <p><strong>Eligibility:</strong> {{ scheme.s_eligibility }}</p>
-                    <p><strong>Benefits:</strong> {{ scheme.benefits }}</p>
-                    <p><strong>Description:</strong> {{ scheme.description }}</p>
+            <div class="card card-animate">
+                <div class="card-header">
+                    <h3>{{ scheme.name }}</h3>
+                    <div class="card-date">
+                        <i class="far fa-calendar"></i> {{ scheme.date|date:"F d, Y" }}
+                    </div>
+                    <div class="card-type">
+                        <i class="fas fa-tag"></i> {{ scheme.scheme_type|default:"Scheme" }}
+                    </div>
                 </div>
-                <div class="additional-info">
-                    <h5>Additional Information</h5>
-                    <p>{{ scheme.additional_info }}</p>
+                
+                <div class="card-tags">
+                    <span class="tag tag-primary">{{ scheme.category }}</span>
+                    <span class="tag tag-location">
+                        <i class="fas fa-map-pin"></i> {{ scheme.location }}
+                    </span>
+                    {% if scheme.s_eligibility %}
+                    <span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>
+                    {% endif %}
                 </div>
-
-                <!-- ✅ Apply Now Button -->
-                <div class="details-actions">
-                    <a href="#" class="apply-btn">Apply Now</a>
+                
+                <div class="card-footer">
+                    <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-details">
+                        <i class="fas fa-info-circle"></i> View Details
+                    </a>
+                    <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="item_type" value="scheme">
+                        <input type="hidden" name="item_id" value="{{ scheme.id }}">
+                        <button type="submit" class="btn-calendar">
+                            <i class="far fa-calendar-plus"></i> Add to Calendar
+                        </button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
         </div>
-    </div>
-
-    <div class="overlay" id="overlay"></div>
-
-    <!-- Navigation Bar -->
-    <div class="navbar">
-        <!-- Brand -->
-        <div class="nav-brand">
-            <i class="fas fa-graduation-cap"></i>
-            <span>PGIP</span>
+        {% else %}
+        <div class="no-data-message">
+            <i class="fas fa-file-alt"></i>
+            <h3>No Government Schemes</h3>
+            <p>There are no schemes matching your criteria at this time.</p>
         </div>
-
-        <!-- Left Links -->
-        <div class="nav-left">
-            <a href="{% url 'dashboard' %}" class="nav-link active"><i class="fas fa-th-large"></i> Dashboard</a>
-            <a href="{% url 'profile' %}" class="nav-link"><i class="fas fa-user"></i> Profile</a>
-            <a href="{% url 'calendar' %}" class="nav-link"><i class="fas fa-calendar"></i> Calendar</a>
-            <a href="{% url 'recommendations' %}" class="nav-link"><i class="fas fa-lightbulb"></i> Recommendations</a>
-            <a href="{% url 'contact' %}" class="nav-link"><i class="fas fa-envelope"></i> Contact Us</a>
-        </div>
-
-        <!-- Right Actions -->
-        <div class="nav-right">
-            <button id="dark-toggle" class="dark-btn"><i class="fas fa-moon"></i></button>
-            {% if user.is_authenticated %}
-            <a href="{% url 'logout' %}" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            {% else %}
-            <a href="{% url 'login' %}"  style= "color: #ffffff; font-size: 14px;"><i class="fas fa-sign-in-alt"></i> Login</a>
-            {% endif %}
-        </div>
+        {% endif %}
+        
     </div>
+</div>
 
-    <!-- Messages Display -->
-    {% if messages %}
-    <div class="messages-container">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
+<!-- Overlay and Details Panel -->
+<div class="overlay" id="overlay" onclick="closeDetails()"></div>
+
+<div class="details-panel" id="detailsPanel">
+    <div class="details-header">
+        <h3 id="detailsTitle">Details</h3>
+        <button class="close-details" onclick="closeDetails()">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
-    {% endif %}
-
-    <!-- Page Layout -->
-    <div class="page-grid">
-
-        <!-- Sidebar Filters -->
-        <aside class="sidebar">
-                <div class="filter-header"><span>Filters</span>
-                <a href="#" id="reset-link" style= "color: #1a73e8; font-size: 14px;">Reset All</a>
-                </div>
-            <div class="filter-section">
-                <!-- Exam Type -->
-                <div class="filter-group">
-                    <h4><i class="fas fa-clipboard-list"></i> Exam Type</h4>
-                    <label class="filter-label"><input type="checkbox" name="exam_type" value="Government" onchange="applyFilters()"> <span>Government</span></label>
-                    <label class="filter-label"><input type="checkbox" name="exam_type" value="National Level" onchange="applyFilters()"> <span>National Level</span></label>
-                    <label class="filter-label"><input type="checkbox" name="exam_type" value="Private" onchange="applyFilters()"> <span>Private</span></label>
-                    <label class="filter-label"><input type="checkbox" name="exam_type" value="State Level" onchange="applyFilters()"> <span>State Level</span></label>
-                    <label class="filter-label"><input type="checkbox" name="exam_type" value="University Level" onchange="applyFilters()"> <span>University Level</span></label>
-                </div>
-
-                <div class="filter-group">
-                    <h4><i class="fas fa-tags"></i> Exam Category</h4>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Agriculture" onchange="applyFilters()"> <span>Agriculture</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Banking" onchange="applyFilters()"> <span>Banking</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Civil Services" onchange="applyFilters()"> <span>Civil Services</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Defense" onchange="applyFilters()"> <span>Defense</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Design" onchange="applyFilters()"> <span>Design</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Employment" onchange="applyFilters()"> <span>Employment</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Engineering" onchange="applyFilters()"> <span>Engineering</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Environment" onchange="applyFilters()"> <span>Environment</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Food Corporation" onchange="applyFilters()"> <span>Food Corporation</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Hotel Management" onchange="applyFilters()"> <span>Hotel Management</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Insurance" onchange="applyFilters()"> <span>Insurance</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Law" onchange="applyFilters()"> <span>Law</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Management" onchange="applyFilters()"> <span>Management</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Medical" onchange="applyFilters()"> <span>Medical</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Science" onchange="applyFilters()"> <span>Science</span></label>
-                    <label class="filter-label"><input type="checkbox" name="category" value="Teaching" onchange="applyFilters()"> <span>Teaching</span></label>
-                </div>
-
-                <div class="filter-group">
-                    <h4><i class="fas fa-user-check"></i> Exam Eligibility</h4>
-                    <label class="filter-label"><input type="checkbox" name="e_eligibility" value="10th Pass" onchange="applyFilters()"><span>10th Pass</span></label>
-                    <label class="filter-label"><input type="checkbox" name="e_eligibility" value="12th Pass" onchange="applyFilters()"><span>12th Pass</span></label>
-                    <label class="filter-label"><input type="checkbox" name="e_eligibility" value="Graduate" onchange="applyFilters()"><span>Graduate</span></label>
-                    <label class="filter-label"><input type="checkbox" name="e_eligibility" value="Post Graduate" onchange="applyFilters()"> <span>Post Graduate</span></label>
-                </div>
-
-                <!-- Mode -->
-                <div class="filter-group">
-                    <h4><i class="fas fa-laptop"></i> Mode</h4>
-                    <label class="filter-label"><input type="checkbox" name="mode" value="Online" onchange="applyFilters()"> <span>Online</span></label>
-                    <label class="filter-label"><input type="checkbox" name="mode" value="Offline" onchange="applyFilters()"> <span>Offline</span></label>
-                </div>
-
-                <!-- Scheme Type -->
-                <div class="filter-group">
-                    <h4><i class="fas fa-handshake"></i> Scheme Type</h4>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Allowance" onchange="applyFilters()"> <span>Allowance</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Central Government" onchange="applyFilters()"> <span>Central Government</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Employment" onchange="applyFilters()"> <span>Employment</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Financial Assistance" onchange="applyFilters()"> <span>Financial Assistance</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Insurance" onchange="applyFilters()"> <span>Insurance</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Loan" onchange="applyFilters()"> <span>Loan</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Pension" onchange="applyFilters()"> <span>Pension</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Scholarship" onchange="applyFilters()"> <span>Scholarship</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="State Government" onchange="applyFilters()"> <span>State Government</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Subsidy" onchange="applyFilters()"> <span>Subsidy</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Training" onchange="applyFilters()"> <span>Training</span></label>
-                    <label class="filter-label"><input type="checkbox" name="scheme_type" value="Welfare" onchange="applyFilters()"> <span>Welfare</span></label>
-                </div>
-
-                <div class="filter-group">
-                    <h4><i class="fas fa-users"></i> Scheme Eligibility</h4>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="10th Pass" onchange="applyFilters()"> <span>10th Pass</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="12th Pass" onchange="applyFilters()"> <span>12th Pass</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="18+ years" onchange="applyFilters()"> <span>18+ years</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="18-40 years" onchange="applyFilters()"> <span>18-40 years</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="18-50 years" onchange="applyFilters()"> <span>18-50 years</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="18-70 years" onchange="applyFilters()"> <span>18-70 years</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="All Residents" onchange="applyFilters()"> <span>All Residents</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="BPL Families" onchange="applyFilters()"> <span>BPL Families</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Farmers" onchange="applyFilters()"> <span>Farmers</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Girl Students" onchange="applyFilters()"> <span>Girl Students</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Girls from BPL families" onchange="applyFilters()"> <span>Girls from BPL families</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Graduate" onchange="applyFilters()"> <span>Graduate</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Graduate, Unemployed" onchange="applyFilters()"> <span>Graduate, Unemployed</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Low Income" onchange="applyFilters()"> <span>Low Income</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Open to All" onchange="applyFilters()"> <span>Open to All</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Postgraduate" onchange="applyFilters()"> <span>Postgraduate</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Rural Population" onchange="applyFilters()"> <span>Rural Population</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="SC/ST/Women" onchange="applyFilters()"> <span>SC/ST/Women</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Senior Citizens" onchange="applyFilters()"> <span>Senior Citizens</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="Startups registered in Delhi" onchange="applyFilters()"> <span>Startups registered in Delhi</span></label>
-                    <label class="filter-label"><input type="checkbox" name="s_eligibility" value="State Residents" onchange="applyFilters()"> <span>State Residents</span></label>
-                </div>
-
-                <!-- Location -->
-                <div class="filter-group">
-                    <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Ahmedabad" onchange="applyFilters()"> <span>Ahmedabad</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="All India" onchange="applyFilters()"> <span>All India</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Andhra Pradesh" onchange="applyFilters()"> <span>Andhra Pradesh</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Chhattisgarh" onchange="applyFilters()"> <span>Chhattisgarh</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Delhi" onchange="applyFilters()"> <span>Delhi</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Gujarat" onchange="applyFilters()"> <span>Gujarat</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Hyderabad" onchange="applyFilters()"> <span>Hyderabad</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Karnataka" onchange="applyFilters()"> <span>Karnataka</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Kerala" onchange="applyFilters()"> <span>Kerala</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Madhya Pradesh" onchange="applyFilters()"> <span>Madhya Pradesh</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Maharashtra" onchange="applyFilters()"> <span>Maharashtra</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Multiple Cities" onchange="applyFilters()"> <span>Multiple Cities</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Odisha" onchange="applyFilters()"> <span>Odisha</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Rural India" onchange="applyFilters()"> <span>Rural India</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Tamil Nadu" onchange="applyFilters()"> <span>Tamil Nadu</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Telangana" onchange="applyFilters()"> <span>Telangana</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="Uttarakhand" onchange="applyFilters()"> <span>Uttarakhand</span></label>
-                    <label class="filter-label"><input type="checkbox" name="location" value="West Bengal" onchange="applyFilters()"> <span>West Bengal</span></label>
-                </div>
-
-                <!-- Sort -->
-                <div class="filter-group">
-                    <h4><i class="fas fa-sort"></i> Sort By</h4>
-                    <select name="sort" id="sort-by" onchange="applyFilters()" class="sort-select">
-                        <option value="date_asc">Date (Oldest First)</option>
-                        <option value="date_desc" selected>Date (Newest First)</option>
-                        <option value="name_asc">Name (A-Z)</option>
-                        <option value="name_desc">Name (Z-A)</option>
-                    </select>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="content">
-
-            <!-- Search -->
-            <form method="get" action="{% url 'search_results' %}" class="search-bar">
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" name="q" placeholder="Search exams or schemes..." required>
-                    <button type="submit" class="search-btn">Search</button>
-                </div>
-            </form>
-
-            <!-- Exams Section -->
-            <h2 class="section-title">
-                <i class="fas fa-clipboard-list"></i>
-                Upcoming Exams
-                <div class="title-underline"></div>
-            </h2>
-            <div class="card-grid" id="exams-container">
-                {% if exams %}
-                {% for exam in exams %}
-                <div class="card exam-card card-animate" data-exam-type="{{ exam.exam_type }}" data-location="{{ exam.location }}"
-                    data-category="{{ exam.category }}" data-mode="{{ exam.mode }}"
-                    data-e_eligibility="{{ exam.e_eligibility|default:'' }}" data-date="{{ exam.date|date:'Y-m-d' }}">
-
-                    <div class="card-header">
-                        <h3>{{ exam.name }}</h3>
-                        <p class="card-date"><i class="fas fa-calendar-alt"></i> {{ exam.date|date:"M d, Y" }}</p>
-                    </div>
-                    <div class="card-tags">
-                        <span class="tag tag-primary">{{ exam.exam_type|default:"Government" }}</span>
-                        <span class="tag tag-mode">{{ exam.mode|default:"Online" }}</span>
-                        <span class="tag tag-category">{{ exam.category|default:"General" }}</span>
-                        {% if exam.location %}<span class="tag tag-location">{{ exam.location }}</span>{% endif %}
-                        {% if exam.e_eligibility %}<span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>{% endif %}
-                    </div>
-
-                    <div class="card-footer">
-                        <a href="#" class="btn-details view-details" data-type="exam" data-id="{{ exam.id }}">
-                            <i class="fas fa-eye"></i> View Details
-                        </a>
-                        {% if user.is_authenticated %}
-                        <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="item_type" value="exam">
-                            <input type="hidden" name="item_id" value="{{ exam.id }}">
-                            <button type="submit" class="btn-calendar">
-                                <i class="fas fa-calendar-plus"></i> Add to Calendar
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="no-data-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h3>No Exams Available</h3>
-                    <p>No exams available at the moment. Please check back later.</p>
-                </div>
-                {% endif %}
-                <div class="no-results" id="exams-no-results" style="display: none;">
-                    <i class="fas fa-search"></i>
-                    <p>No exams match your filter criteria.</p>
-                </div>
-            </div>
-
-            <!-- Schemes Section -->
-            <h2 class="section-title">
-                <i class="fas fa-handshake"></i>
-                Government Schemes
-                <div class="title-underline"></div>
-            </h2>
-            <div class="card-grid" id="schemes-container">
-                {% if schemes %}
-                {% for scheme in schemes %}
-                <div class="card scheme-card card-animate" data-scheme-type="{{ scheme.scheme_type }}"
-                    data-location="{{ scheme.location }}" data-category="{{ scheme.category }}"
-                    data-s_eligibility="{{ scheme.s_eligibility|default:'' }}"
-                    data-date="{{ scheme.date|date:'Y-m-d' }}">
-
-                    <div class="card-header">
-                        <h3>{{ scheme.name }}</h3>
-                        <p class="card-type"><i class="fas fa-tags"></i> {{ scheme.scheme_type|default:"Central" }}</p>
-                        {% if scheme.date %}
-                        <p class="card-date"><i class="fas fa-calendar-alt"></i> {{ scheme.date|date:"M d, Y" }}</p>
-                        {% endif %}
-                    </div>
-
-                    <div class="card-tags">
-                        <span class="tag tag-primary">{{ scheme.scheme_type|default:"Central" }}</span>
-                        <span class="tag tag-category">{{ scheme.category|default:"General" }}</span>
-                        {% if scheme.location %}<span class="tag tag-location">{{ scheme.location }}</span>{% endif %}
-                        {% if scheme.s_eligibility %}<span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>{% endif %}
-                    </div>
-
-                    <div class="card-footer">
-                        <a href="#" class="btn-details view-details" data-type="scheme" data-id="{{ scheme.id }}">
-                            <i class="fas fa-eye"></i> View Details
-                        </a>
-                        {% if user.is_authenticated %}
-                        <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="item_type" value="scheme">
-                            <input type="hidden" name="item_id" value="{{ scheme.id }}">
-                            <button type="submit" class="btn-calendar">
-                                <i class="fas fa-calendar-plus"></i> Add to Calendar
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="no-data-message">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <h3>No Schemes Available</h3>
-                    <p>No schemes available at the moment. Please check back later.</p>
-                </div>
-                {% endif %}
-                <div class="no-results" id="schemes-no-results" style="display: none;">
-                    <i class="fas fa-search"></i>
-                    <p>No schemes match your filter criteria.</p>
-                </div>
-            </div>
-        </main>
+    <div class="details-content" id="detailsContent">
+        <!-- Dynamic content will be loaded here -->
     </div>
+</div>
+
+<!-- Messages Container -->
+{% if messages %}
+<div class="messages-container">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+        {{ message }}
+        <button class="btn-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- CSS for top filter button -->
+<style>
+    .filter-actions-top {
+        margin-bottom: 1rem;
+        text-align: center;
+    }
     
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-links">
-                <p>&copy; 2025 PGIP | <a href="#">Policy</a> | <a href="{% url 'contact' %}">Contact Us</a></p>
-                <p>We provide free job alert service to job seekers in India on latest government jobs and important scheme details</p>
-            </div>
-        </div>
-    </footer>
+    .btn-apply-filters {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: var(--shadow-light);
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-apply-filters:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+        background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    }
+    
+    .btn-apply-filters i {
+        font-size: 0.9rem;
+    }
+    
+    .dark-mode .btn-apply-filters {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+    }
+    
+    /* Make filter section scrollable with max height */
+    .filter-section {
+        max-height: 70vh;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+</style>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/dASHboard.js' %}"></script>
-    <script src="{% static 'js/Dark.js' %}"></script>
-</body>
+<script>
+// Preserve selected filter values from URL parameters
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check checkboxes based on URL parameters
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        const values = urlParams.getAll(checkbox.name);
+        if (values.includes(checkbox.value)) {
+            checkbox.checked = true;
+        }
+    });
+    
+    // Set sort select value
+    const sortSelect = document.querySelector('.sort-select');
+    if (sortSelect) {
+        const sortValue = urlParams.get('sort');
+        if (sortValue) {
+            sortSelect.value = sortValue;
+        }
+    }
+});
 
-</html>
+// Details panel functions
+function openDetails(itemType, itemId) {
+    document.getElementById('overlay').classList.add('active');
+    document.getElementById('detailsPanel').classList.add('active');
+    document.getElementById('detailsTitle').textContent = 'Loading...';
+    document.getElementById('detailsContent').innerHTML = '<div class="no-data-message"><i class="fas fa-spinner fa-spin"></i><p>Loading details...</p></div>';
+    
+    // Fetch details via AJAX
+    fetch(`/${itemType}/${itemId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById('detailsContent').innerHTML = `<p class="no-data-message">${data.error}</p>`;
+            } else {
+                document.getElementById('detailsTitle').textContent = data.name;
+                document.getElementById('detailsContent').innerHTML = data.details;
+            }
+        })
+        .catch(error => {
+            document.getElementById('detailsContent').innerHTML = '<p class="no-data-message">Error loading details. Please try again.</p>';
+        });
+}
+
+function closeDetails() {
+    document.getElementById('overlay').classList.remove('active');
+    document.getElementById('detailsPanel').classList.remove('active');
+}
+
+// Auto-hide messages after 5 seconds
+setTimeout(function() {
+    document.querySelectorAll('.alert').forEach(alert => {
+        alert.style.transition = 'opacity 0.5s';
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 500);
+    });
+}, 5000);
+</script>
+
+{% endblock %}

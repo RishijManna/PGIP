@@ -1,182 +1,280 @@
+{% extends "base.html" %}
+
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Profile</title>
-    <link rel="stylesheet" href="{% static 'css/PROFILE.css' %}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-</head>
-<body>
-    <!-- Navigation Bar -->
-    <div class="navbar">
-        <div class="nav-brand">
-            <i class="fas fa-graduation-cap"></i>
-            <span>PGIP</span>
-        </div>
-        <div class="nav-left">
-            <a href="{% url 'dashboard' %}"><i class="fas fa-th-large"></i> Dashboard</a>
-            <a href="{% url 'profile' %}" class="active"><i class="fas fa-user"></i> Profile</a>
-            <a href="{% url 'calendar' %}"><i class="fas fa-calendar"></i> Calendar</a>
-            <a href="{% url 'recommendations' %}"><i class="fas fa-lightbulb"></i> Recommendations</a>
-            <a href="{% url 'contact' %}"><i class="fas fa-envelope"></i> Contact Us</a>
-        </div>
-        <div class="nav-right">
-            <button id="dark-toggle" class="dark-btn"><i class="fas fa-moon"></i></button>
-            {% if user.is_authenticated %}
-                <a href="{% url 'logout' %}" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            {% else %}
-                <a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Login</a>
-            {% endif %}
-        </div>
-    </div>
 
-    <!-- Profile Container -->
-    <div class="container">
-        <h2>My Profile</h2>
+{% block title %}
+My Profile
+{% endblock %}
 
-        <!-- Profile Update Form -->
-        <form method="POST" enctype="multipart/form-data" class="profile-form">
+{% block extra_css %}
+
+
+
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <h2>
+        My Profile
+    </h2>
+
+    <!-- Profile Update Form -->
+
+    <form method="POST"
+          enctype="multipart/form-data"
+          class="profile-form">
+
+        {% csrf_token %}
+
+        <!-- Row 1 -->
+
+        <div class="form-group">
+            <label>First Name:</label>
+            {{ user_form.first_name }}
+        </div>
+
+        <div class="form-group">
+            <label>Middle Name:</label>
+            {{ profile_form.middle_name }}
+        </div>
+
+        <div class="form-group">
+            <label>Last Name:</label>
+            {{ user_form.last_name }}
+        </div>
+
+        <div class="form-group">
+            <label>Email:</label>
+
+            <input type="email"
+                   value="{{ request.user.email }}"
+                   disabled
+                   class="form-control">
+        </div>
+
+        <!-- Row 2 -->
+
+        <div class="form-group">
+            <label>Gender:</label>
+            {{ profile_form.gender }}
+        </div>
+
+        <div class="form-group">
+            <label>Date of Birth:</label>
+            {{ profile_form.dob }}
+        </div>
+
+        <div class="form-group">
+            <label>College:</label>
+            {{ profile_form.college }}
+        </div>
+
+        <div class="form-group">
+            <label>Education:</label>
+            {{ profile_form.education }}
+        </div>
+
+        <!-- Row 3 -->
+
+        <div class="form-group">
+            <label>Income:</label>
+            {{ profile_form.income }}
+        </div>
+
+        <div class="form-group">
+            <label>Location:</label>
+            {{ profile_form.location }}
+        </div>
+
+        <div class="form-group">
+            <label>Nation:</label>
+            {{ profile_form.nation }}
+        </div>
+
+        <div class="form-group">
+            <label>Religion:</label>
+            {{ profile_form.religion }}
+        </div>
+
+        <!-- Row 4 -->
+
+        <div class="form-group">
+            <label>Caste:</label>
+            {{ profile_form.caste }}
+        </div>
+
+        <!-- Interests -->
+
+        <div class="form-group full-width">
+
+            <label>
+                Interests:
+            </label>
+
+            <div class="interest-options">
+
+                {% for value, label in profile_form.fields.interests.choices %}
+
+                <label class="interest-option
+                       {% if value in profile_form.initial.interests %}
+                       selected
+                       {% endif %}">
+
+                    <input type="checkbox"
+                           name="interests"
+                           value="{{ value }}"
+
+                           {% if value in profile_form.initial.interests %}
+                           checked
+                           {% endif %}
+
+                           hidden>
+
+                    {{ label }}
+
+                </label>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <!-- Update Button -->
+
+        <div class="form-actions full-width">
+
+            <button type="submit"
+                    name="update_profile"
+                    class="update-btn">
+
+                Update Profile
+
+            </button>
+
+        </div>
+
+    </form>
+
+
+    <hr class="divider">
+
+
+    <!-- Document Upload Section -->
+
+    <div class="documents-section">
+
+        <h3>
+            Document Management
+        </h3>
+
+        <form method="POST"
+              enctype="multipart/form-data"
+              class="upload-form">
+
             {% csrf_token %}
 
-            <!-- Row 1 -->
-            <div class="form-group">
-                <label>First Name:</label>
-                {{ user_form.first_name }}
-            </div>
-            <div class="form-group">
-                <label>Middle Name:</label>
-                {{ profile_form.middle_name }}
-            </div>
-            <div class="form-group">
-                <label>Last Name:</label>
-                {{ user_form.last_name }}
-            </div>
-            <div class="form-group">
-                <label>Email:</label>
-                <input type="email" value="{{ request.user.email }}" disabled class="form-control"/>
-            </div>
+            <input type="text"
+                   name="name"
+                   placeholder="Document Name"
+                   required>
 
-            <!-- Row 2 -->
-            <div class="form-group">
-                <label>Gender:</label>
-                {{ profile_form.gender }}
-            </div>
-            <div class="form-group">
-                <label>Date of Birth:</label>
-                {{ profile_form.dob }}
-            </div>
-            <div class="form-group">
-                <label>College:</label>
-                {{ profile_form.college }}
-            </div>
-            <div class="form-group">
-                <label>Education:</label>
-                {{ profile_form.education }}
-            </div>
+            <input type="file"
+                   name="file"
+                   required>
 
-            <!-- Row 3 -->
-            <div class="form-group">
-                <label>Income:</label>
-                {{ profile_form.income }}
-            </div>
-            <div class="form-group">
-                <label>Location:</label>
-                {{ profile_form.location }}
-            </div>
-            <div class="form-group">
-                <label>Nation:</label>
-                {{ profile_form.nation }}
-            </div>
-            <div class="form-group">
-                <label>Religion:</label>
-                {{ profile_form.religion }}
-            </div>
+            <button type="submit"
+                    name="upload_document">
 
-            <!-- Row 4 -->
-            <div class="form-group">
-                <label>Caste:</label>
-                {{ profile_form.caste }}
-            </div>
+                Upload Document
 
-            <!-- Interests -->
-            <div class="form-group full-width">
-                <label>Interests:</label>
-                <div class="interest-options">
-                    {% for value, label in profile_form.fields.interests.choices %}
-                        <label class="interest-option {% if value in profile_form.initial.interests %}selected{% endif %}">
-                            <input type="checkbox" name="interests" value="{{ value }}"
-                                {% if value in profile_form.initial.interests %}checked{% endif %} hidden>
-                            {{ label }}
-                        </label>
-                    {% endfor %}
-                </div>
-            </div>
+            </button>
 
-            <!-- Update Button -->
-            <div class="form-actions full-width">
-                <button type="submit" name="update_profile" class="update-btn">Update Profile</button>
-            </div>
         </form>
 
-        <hr class="divider">
 
-        <!-- Document Upload Section -->
-        <div class="documents-section">
-            <h3>Document Management</h3>
-            
-            <form method="POST" enctype="multipart/form-data" class="upload-form">
-                {% csrf_token %}
-                <input type="text" name="name" placeholder="Document Name" required>
-                <input type="file" name="file" required>
-                <button type="submit" name="upload_document">Upload Document</button>
-            </form>
+        <ul class="documents-list">
 
-            <ul class="documents-list">
-                {% for doc in documents %}
-                    <li>
-                        <span>{{ doc.name }}</span>
-                        <div class="document-actions">
-                            <!-- View -->
-                            <a href="{{ doc.file.url }}" target="_blank"><i class="fas fa-eye"></i> View</a>
-                            
-                            <!-- Download -->
-                            <a href="{{ doc.file.url }}" download><i class="fas fa-download"></i> Download</a>
-                            
-                            <!-- Delete -->
-                            <form method="POST" action="{% url 'delete_document' doc.id %}">
-                                {% csrf_token %}
-                                <button type="submit" onclick="return confirm('Are you sure you want to delete this document?');">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </form>
-                        </div>
-                    </li>
-                {% empty %}
-                    <li class="empty-documents">No documents uploaded yet.</li>
-                {% endfor %}
-            </ul>
-        </div>
+            {% for doc in documents %}
+
+            <li>
+
+                <span>
+                    {{ doc.name }}
+                </span>
+
+                <div class="document-actions">
+
+                    <a href="{{ doc.file.url }}"
+                       target="_blank">
+
+                        View
+
+                    </a>
+
+                    <a href="{{ doc.file.url }}"
+                       download>
+
+                        Download
+
+                    </a>
+
+                    <form method="POST"
+                          action="{% url 'delete_document' doc.id %}">
+
+                        {% csrf_token %}
+
+                        <button type="submit"
+                                onclick="return confirm('Delete this document?');">
+
+                            Delete
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </li>
+
+            {% empty %}
+
+            <li class="empty-documents">
+                No documents uploaded yet.
+            </li>
+
+            {% endfor %}
+
+        </ul>
+
     </div>
 
-    <script src="{% static 'js/Dark.js' %}"></script>
-    <script>
-        document.querySelectorAll('.interest-option').forEach(option => {
-            option.addEventListener('click', function (e) {
-                e.preventDefault();
-                this.classList.toggle('selected');
-                const checkbox = this.querySelector('input');
-                checkbox.checked = !checkbox.checked;
-            });
-        });
-    </script>
-</body>
-<footer class="footer">
-    <div class="footer-links"> 
-        © 2025 PGIP | <a href="#">Policy</a> | <a href="{% url 'contact' %}">Contact Us</a>
-        <p>
-            We provide free job alert service to job seekers in India on latest government jobs and important scheme details
-        </p>
-    </div>
-</footer>
-</html>
+</div>
+
+
+<script src="{% static 'js/Dark.js' %}"></script>
+
+<script>
+
+document.querySelectorAll('.interest-option')
+.forEach(option => {
+
+    option.addEventListener('click', function(e) {
+
+        e.preventDefault()
+
+        this.classList.toggle('selected')
+
+        const checkbox = this.querySelector('input')
+
+        checkbox.checked = !checkbox.checked
+
+    })
+
+})
+
+</script>
+
+{% endblock %}

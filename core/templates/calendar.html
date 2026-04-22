@@ -1,156 +1,161 @@
+{% extends "base.html" %}
+
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Calendar</title>
 
-    <!-- Bootstrap and FullCalendar Styles -->
+{% block title %}
+Calendar
+{% endblock %}
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/CalendaR.css' %}">
-    
-</head>
-<body>
+{% block extra_css %}
 
-<!-- ✅ Updated Navbar -->
-<div class="navbar">
-    <div class="nav-brand">
-        <i class="fas fa-graduation-cap"></i>
-        <span>PGIP</span>
-    </div>
-    <div class="nav-left">
-        <a href="{% url 'dashboard' %}"><i class="fas fa-th-large"></i> Dashboard</a>
-        <a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a>
-        <a href="{% url 'calendar' %}" class="active"><i class="fas fa-calendar"></i> Calendar</a>
-        <a href="{% url 'recommendations' %}"><i class="fas fa-lightbulb"></i> Recommendations</a>
-        <a href="{% url 'contact' %}"><i class="fas fa-envelope"></i> Contact Us</a>
-    </div>
-    <div class="nav-right">
-        <button id="dark-toggle" class="dark-btn"><i class="fas fa-moon"></i></button>
-        {% if user.is_authenticated %}
-            <a href="{% url 'logout' %}" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        {% else %}
-            <a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Login</a>
-        {% endif %}
-    </div>
-    <div class="mobile-menu-btn">
-        <i class="fas fa-bars"></i>
-    </div>
-</div>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<!-- Main Container -->
+
+
+{% endblock %}
+
+{% block content %}
+
 <div class="container mt-4">
-    <h2 class="text-center mb-4">Schedule Saver</h2>
-    
+
+    <h2 class="text-center mb-4">
+        Schedule Saver
+    </h2>
+
     <div class="calendar-nav">
-        <button class="calendar-nav-btn active" data-target="default">Calendar</button>
-        <button class="calendar-nav-btn" data-target="user">My Personal Calendar</button>
+
+        <button class="calendar-nav-btn active"
+                data-target="default">
+
+            Calendar
+
+        </button>
+
+        <button class="calendar-nav-btn"
+                data-target="user">
+
+            My Personal Calendar
+
+        </button>
+
     </div>
-    
+
     <div class="calendar-container swipe-enabled">
-        <div class="calendar-wrapper swipe-enabled" id="calendarWrapper">
-            <!-- Default Events Calendar (Exams & Schemes) -->
+
+        <div class="calendar-wrapper swipe-enabled"
+             id="calendarWrapper">
+
             <div class="calendar-view swipe-enabled">
+
                 <div class="calendar-section">
+
                     <div id="defaultCalendar"></div>
+
                 </div>
+
             </div>
-            
-            <!-- User Reminders Calendar -->
+
             <div class="calendar-view swipe-enabled">
+
                 <div class="calendar-section">
+
                     <div id="userCalendar"></div>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
-    
-    <div class="swipe-indicator">
-        <i class="fas fa-arrow-left"></i>
-        Swipe to switch calendars
-        <i class="fas fa-arrow-right"></i>
-    </div>
+
 </div>
+
 
 <!-- Add Reminder Modal -->
-<div class="modal fade" id="reminderModal" tabindex="-1">
+
+<div class="modal fade"
+     id="reminderModal"
+     tabindex="-1">
+
     <div class="modal-dialog">
+
         <div class="modal-content">
+
             <form id="reminderForm">
+
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Reminder</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                    <h5 class="modal-title">
+
+                        Add Reminder
+
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+
+                    </button>
+
                 </div>
+
                 <div class="modal-body">
-                    <input type="hidden" id="reminderDate">
+
+                    <input type="hidden"
+                           id="reminderDate">
+
                     <div class="mb-3">
-                        <label class="form-label">Reminder Title</label>
-                        <input type="text" class="form-control" id="reminderTitle" required>
+
+                        <label class="form-label">
+
+                            Reminder Title
+
+                        </label>
+
+                        <input type="text"
+                               class="form-control"
+                               id="reminderTitle"
+                               required>
+
                     </div>
+
                 </div>
+
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Add</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+
+                        Add
+
+                    </button>
+
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+
+                        Cancel
+
+                    </button>
+
                 </div>
+
             </form>
+
         </div>
+
     </div>
+
 </div>
 
-<!-- View/Delete Reminder Modal -->
-<div class="modal fade" id="viewReminderModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Reminder Details</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="deleteReminderId">
-                <p id="reminderDetails"></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Event Details Modal -->
-<div class="modal fade" id="eventDetailsModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="eventModalTitle">Event Details</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="eventModalBody">
-                <!-- Event details will be inserted here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- JS Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-<script src="{% static 'js/Dark.js' %}"></script>
+
 <script src="{% static 'js/calendaR.js' %}"></script>
 
-<footer class="footer">
-    <div class="footer-links"> 
-        © 2025 PGIP | <a href="#">Policy</a> | <a href="{% url 'contact' %}">Contact Us</a>
-        <p>
-            We provide free job alert service to job seekers in India on latest government jobs and important scheme details
-        </p>
-    </div>
-</footer>
+<script src="{% static 'js/Dark.js' %}"></script>
 
-</body>
-</html>
+{% endblock %}

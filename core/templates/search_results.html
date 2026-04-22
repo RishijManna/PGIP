@@ -1,139 +1,213 @@
+{% extends "base.html" %}
+
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search Results</title>
-    <link rel="stylesheet" href="{% static 'css/Search_resultS.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
 
-<!-- Navbar -->
-<div class="navbar">
-    <div class="nav-brand">
-        <i class="fas fa-graduation-cap"></i>
-        <span>PGIP</span>
-    </div>
+{% block title %}
+Search Results
+{% endblock %}
 
-    <div class="nav-center">
-        <!-- Search Bar inside navbar -->
-        <form action="{% url 'search_results' %}" method="GET" class="search-form">
-            <input type="text" name="q" value="{{ query }}" placeholder="Search exams, schemes and more...">
-            <button type="submit"><i class="fas fa-search"></i></button>
-        </form>
-    </div>
+{% block extra_css %}
 
-    <div class="nav-right">
-        <a href="{% url 'dashboard' %}" class="btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
-        <button id="dark-toggle" class="dark-btn">
-            <i class="fas fa-moon"></i>
-        </button>
-    </div>
-</div>
 
-<!-- Main Content -->
+
+{% endblock %}
+
+{% block content %}
+
 <div class="container main-container">
+
+    <!-- Search Bar -->
+
+    <form action="{% url 'search_results' %}"
+          method="GET"
+          class="search-form">
+
+        <input type="text"
+               name="q"
+               value="{{ query }}"
+               placeholder="Search exams, schemes and more...">
+
+        <button type="submit">
+            <i class="fas fa-search"></i>
+        </button>
+
+    </form>
+
+
     <!-- Search Summary -->
+
     <div class="search-summary-card">
-        <h1 class="search-title"><i class="fas fa-search"></i> Search Results for "{{ query }}"</h1>
+
+        <h1>
+
+            Search Results for
+
+            "{{ query }}"
+
+        </h1>
+
         <div class="results-stats">
-            <span class="stat-badge"><i class="fas fa-file-alt"></i> {{ exams|length }} Exams</span>
-            <span class="stat-badge"><i class="fas fa-landmark"></i> {{ schemes|length }} Schemes</span>
+
+            <span>
+
+                {{ exams|length }} Exams
+
+            </span>
+
+            <span>
+
+                {{ schemes|length }} Schemes
+
+            </span>
+
         </div>
+
     </div>
 
-    <!-- Results Container -->
-    <div class="results-container">
-        <!-- Exams Section -->
-        <section class="results-section">
-            <div class="section-header">
-                <h2><i class="fas fa-file-alt"></i> Exams</h2>
-                {% if exams %}
-                <span class="result-count">{{ exams|length }} results</span>
-                {% endif %}
-            </div>
-            
-            {% if exams %}
-            <div class="results-grid">
-                {% for exam in exams %}
-                <div class="result-card">
-                    <div class="card-icon exam-icon">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>{{ exam.name }}</h3>
-                        <p class="card-meta"><i class="far fa-calendar-alt"></i> {{ exam.date }}</p>
-                        <p class="card-desc">This exam will be conducted from 10th to 20th June 2025 in online mode across multiple centers</p>
-                    </div>
-                    <div class="card-actions">
-                        <a href="{% url 'details' 'exam' exam.id %}" class="btn-primary">Details<i class="fas fa-arrow-right"></i></a>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="empty-state">
-                <i class="fas fa-file-alt"></i>
-                <h3>No matching exams found</h3>
-                <p>Try different keywords or browse all exams</p>
-            </div>
-            {% endif %}
-        </section>
 
-        <!-- Schemes Section -->
-        <section class="results-section">
-            <div class="section-header">
-                <h2><i class="fas fa-landmark"></i> Schemes</h2>
-                {% if schemes %}
-                <span class="result-count">{{ schemes|length }} results</span>
-                {% endif %}
+    <!-- Exams Section -->
+
+    <section class="results-section">
+
+        <h2>
+
+            Exams
+
+        </h2>
+
+        {% if exams %}
+
+        <div class="results-grid">
+
+            {% for exam in exams %}
+
+            <div class="result-card">
+
+                <h3>
+
+                    {{ exam.name }}
+
+                </h3>
+
+                <p>
+
+                    {{ exam.date }}
+
+                </p>
+
+                <a href="{% url 'details' 'exam' exam.id %}"
+                   class="btn-primary">
+
+                    Details
+
+                </a>
+
             </div>
-            
-            {% if schemes %}
-            <div class="results-grid">
-                {% for scheme in schemes %}
-                <div class="result-card">
-                    <div class="card-icon scheme-icon">
-                        <i class="fas fa-landmark"></i>
-                    </div>
-                    <div class="card-content">
-                        <h3>{{ scheme.name }}</h3>
-                        <p class="card-meta"><i class="far fa-calendar-alt"></i> {{scheme.date}}</p>
-                        <p class="card-desc">This Scheme offers assistance to all eligible candidates who had applied</p>
-                    </div>
-                    <div class="card-actions">
-                        <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-primary">Details<i class="fas fa-arrow-right"></i></a>
-                    </div>
-                </div>
-                {% endfor %}
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p>
+
+            No matching exams found.
+
+        </p>
+
+        {% endif %}
+
+    </section>
+
+
+    <!-- Schemes Section -->
+
+    <section class="results-section">
+
+        <h2>
+
+            Schemes
+
+        </h2>
+
+        {% if schemes %}
+
+        <div class="results-grid">
+
+            {% for scheme in schemes %}
+
+            <div class="result-card">
+
+                <h3>
+
+                    {{ scheme.name }}
+
+                </h3>
+
+                <p>
+
+                    {{ scheme.date }}
+
+                </p>
+
+                <a href="{% url 'details' 'scheme' scheme.id %}"
+                   class="btn-primary">
+
+                    Details
+
+                </a>
+
             </div>
-            {% else %}
-            <div class="empty-state">
-                <i class="fas fa-landmark"></i>
-                <h3>No matching schemes found</h3>
-                <p>Try different keywords or browse all schemes</p>
-            </div>
-            {% endif %}
-        </section>
-    </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% else %}
+
+        <p>
+
+            No matching schemes found.
+
+        </p>
+
+        {% endif %}
+
+    </section>
+
 </div>
+
 
 <script src="{% static 'js/Dark.js' %}"></script>
+
 <script>
-    // Card animation
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.result-card');
-        cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
-            card.classList.add('animate-in');
-        });
-    });
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function() {
+
+        const cards =
+        document.querySelectorAll(
+            '.result-card'
+        )
+
+        cards.forEach(
+            (card, index) => {
+
+                card.style.animationDelay =
+                `${index * 0.1}s`
+
+                card.classList.add(
+                    'animate-in'
+                )
+
+            }
+        )
+
+    }
+)
+
 </script>
 
-</body>
-</html>
+{% endblock %}
