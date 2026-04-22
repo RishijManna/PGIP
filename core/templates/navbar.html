@@ -1,0 +1,59 @@
+<div class="navbar">
+
+    <div class="nav-brand">
+        <i class="fas fa-graduation-cap"></i>
+        PGIP
+    </div>
+
+    <div class="nav-left">
+
+        <a href="{% url 'dashboard' %}">
+            <i class="fas fa-th-large"></i>
+            Dashboard
+        </a>
+
+        <a href="{% url 'profile' %}">
+            <i class="fas fa-user"></i>
+            Profile
+        </a>
+
+        <a href="{% url 'calendar' %}">
+            <i class="fas fa-calendar"></i>
+            Calendar
+        </a>
+
+        <a href="{% url 'recommendations' %}">
+            <i class="fas fa-lightbulb"></i>
+            Recommendations
+        </a>
+
+        <a href="{% url 'contact' %}">
+            <i class="fas fa-envelope"></i>
+            Contact
+        </a>
+
+    </div>
+
+    <div class="nav-right">
+
+        <button id="dark-toggle">
+            <i class="fas fa-moon"></i>
+        </button>
+
+        {% if user.is_authenticated %}
+
+        <a href="{% url 'logout' %}" class="btn-logout">
+            Logout
+        </a>
+
+        {% else %}
+
+        <a href="{% url 'login' %}">
+            Login
+        </a>
+
+        {% endif %}
+
+    </div>
+
+</div>

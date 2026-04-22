@@ -454,74 +454,62 @@ def profile_view(request):
         "documents": documents,
     })
 
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+
+from .models import UserProfile
+from .models import Exam
+from .models import Scheme
+
+from .services.ai_recommendation import (
+    recommend_exams,
+    recommend_schemes,
+)
+
+
 @login_required
 def recommendations_view(request):
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
-    # Safely handle missing/empty interests
+    profile, _ = UserProfile.objects.get_or_create(
+        user=request.user
+    )
+
+    all_exams = Exam.objects.all()
+
+    all_schemes = Scheme.objects.all()
+
+    recommended_exams = recommend_exams(
+        profile,
+        all_exams
+    )
+
+    recommended_schemes = recommend_schemes(
+        profile,
+        all_schemes
+    )
+
+    interests = []
+
     if profile.interests:
-        interests = [i.strip().lower() for i in profile.interests.split(",") if i.strip()]
-    else:
-        interests = []
 
-    user_location = profile.location if profile.location else ""
-
-    # ✅ mapping aligned with Exam.CATEGORY_CHOICES and Scheme.CATEGORY_CHOICES
-    interest_mapping_exams = {
-        'tech': 'Engineering',
-        'govt': 'Civil Services',
-        'exams': 'Banking',
-        'health': 'Medical',
-        'edu': 'Teaching',
-        'law': 'Law',
-        'management': 'Management',
-        'defense': 'Defense',
-        'env': 'Environment',
-    }
-
-    interest_mapping_schemes = {
-        'edu': 'Education',
-        'employment': 'Employment',
-        'health': 'Health',
-        'finance': 'Finance',
-        'welfare': 'Welfare',
-        'startup': 'Entrepreneurship',
-        'general': 'General',
-        'env': 'Environment',
-        'scholarships': 'Scholarship',  # Fix spelling too
-    }
-
-    exams = Exam.objects.none()
-    schemes = Scheme.objects.none()
-
-    if interests:
-        for interest in interests:
-            mapped_exam_value = interest_mapping_exams.get(interest)
-            if mapped_exam_value:
-                exams |= Exam.objects.filter(category__icontains=mapped_exam_value)
-                if user_location:
-                    exams |= Exam.objects.filter(
-                        location__icontains=user_location,
-                        category__icontains=mapped_exam_value
-                    )
-
-            mapped_scheme_value = interest_mapping_schemes.get(interest)
-            if mapped_scheme_value:
-                schemes |= Scheme.objects.filter(category__icontains=mapped_scheme_value)
-                if user_location:
-                    schemes |= Scheme.objects.filter(
-                        location__icontains=user_location,
-                        category__icontains=mapped_scheme_value
-                    )
+        interests = [
+            i.strip()
+            for i in profile.interests.split(",")
+            if i.strip()
+        ]
 
     context = {
-        'exams': exams.distinct(),
-        'schemes': schemes.distinct(),
-        'interests': interests,
-        'user_location': user_location,
+        "exams": recommended_exams,
+        "schemes": recommended_schemes,
+        "interests": interests,
+        "user_location": profile.location,
     }
-    return render(request, 'recommendations.html', context)
 
+    return render(
+        request,
+        "recommendations.html",
+        context
+    )
 
 def details_view(request, item_type, item_id):
     if item_type == 'exam':
