@@ -239,7 +239,7 @@ body {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 2rem;
-    color: var(--primary-dark);
+    color: #6a8fc2;;
     text-align: center;
     position: relative;
     animation: slideInFromLeft 0.6s ease;
@@ -2584,7 +2584,7 @@ textarea.form-control {
 .dark-mode .recom-header h1,
 .dark-mode .resources-section h2,
 .dark-mode .documents-section h3 {
-    color: white;
+    color: #7195c7;
 }
 
 .dark-mode .form-group label,

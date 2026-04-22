@@ -116,7 +116,7 @@ def recommend_exams(profile, exams):
         exam
         for exam, score in scored
         if score > 0
-    ][:5]
+    ][:15]
 
 
 def recommend_schemes(profile, schemes):
@@ -143,4 +143,4 @@ def recommend_schemes(profile, schemes):
         scheme
         for scheme, score in scored
         if score > 0
-    ][:5]
+    ][:15]

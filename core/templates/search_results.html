@@ -1,213 +1,396 @@
 {% extends "base.html" %}
-
 {% load static %}
 
 {% block title %}
-Search Results
-{% endblock %}
-
-{% block extra_css %}
-
-
-
+Search Results{% if query %} for "{{ query }}"{% endif %}
 {% endblock %}
 
 {% block content %}
 
-<div class="container main-container">
-
-    <!-- Search Bar -->
-
-    <form action="{% url 'search_results' %}"
-          method="GET"
-          class="search-form">
-
-        <input type="text"
-               name="q"
-               value="{{ query }}"
-               placeholder="Search exams, schemes and more...">
-
-        <button type="submit">
-            <i class="fas fa-search"></i>
-        </button>
-
-    </form>
-
-
-    <!-- Search Summary -->
-
-    <div class="search-summary-card">
-
-        <h1>
-
-            Search Results for
-
-            "{{ query }}"
-
-        </h1>
-
-        <div class="results-stats">
-
-            <span>
-
-                {{ exams|length }} Exams
-
-            </span>
-
-            <span>
-
-                {{ schemes|length }} Schemes
-
-            </span>
-
-        </div>
-
+<!-- Search Bar -->
+<div class="search-bar">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <form method="get" action="{% url 'search_results' %}" style="display: flex; width: 100%;">
+            <input type="text" name="q" placeholder="Search exams or schemes..." value="{{ query|default:'' }}">
+            <button type="submit" class="search-btn">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </form>
     </div>
-
-
-    <!-- Exams Section -->
-
-    <section class="results-section">
-
-        <h2>
-
-            Exams
-
-        </h2>
-
-        {% if exams %}
-
-        <div class="results-grid">
-
-            {% for exam in exams %}
-
-            <div class="result-card">
-
-                <h3>
-
-                    {{ exam.name }}
-
-                </h3>
-
-                <p>
-
-                    {{ exam.date }}
-
-                </p>
-
-                <a href="{% url 'details' 'exam' exam.id %}"
-                   class="btn-primary">
-
-                    Details
-
-                </a>
-
-            </div>
-
-            {% endfor %}
-
-        </div>
-
-        {% else %}
-
-        <p>
-
-            No matching exams found.
-
-        </p>
-
-        {% endif %}
-
-    </section>
-
-
-    <!-- Schemes Section -->
-
-    <section class="results-section">
-
-        <h2>
-
-            Schemes
-
-        </h2>
-
-        {% if schemes %}
-
-        <div class="results-grid">
-
-            {% for scheme in schemes %}
-
-            <div class="result-card">
-
-                <h3>
-
-                    {{ scheme.name }}
-
-                </h3>
-
-                <p>
-
-                    {{ scheme.date }}
-
-                </p>
-
-                <a href="{% url 'details' 'scheme' scheme.id %}"
-                   class="btn-primary">
-
-                    Details
-
-                </a>
-
-            </div>
-
-            {% endfor %}
-
-        </div>
-
-        {% else %}
-
-        <p>
-
-            No matching schemes found.
-
-        </p>
-
-        {% endif %}
-
-    </section>
-
 </div>
 
+<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 1rem 2rem;">
+    
+    <!-- Search Summary -->
+    <div class="search-summary">
+        <h2>
+            <i class="fas fa-search"></i>
+            Search Results for "<span>{{ query }}</span>"
+        </h2>
+        <div class="results-stats">
+            <span class="stat-exams">
+                <i class="fas fa-calendar-alt"></i>
+                <strong>{{ exams|length }}</strong> Exams found
+            </span>
+            <span class="stat-schemes">
+                <i class="fas fa-landmark"></i>
+                <strong>{{ schemes|length }}</strong> Schemes found
+            </span>
+        </div>
+    </div>
 
+    <!-- Exams Section -->
+    <section class="results-section">
+        <h2 class="section-title">
+            <i class="fas fa-calendar-alt"></i> Exams
+            <span class="title-underline"></span>
+        </h2>
+        
+        {% if exams %}
+        <div class="card-grid">
+            {% for exam in exams %}
+            <div class="card card-animate">
+                <div class="card-header">
+                    <h3>{{ exam.name }}</h3>
+                    <div class="card-date">
+                        <i class="far fa-calendar"></i> {{ exam.date|date:"F d, Y" }}
+                    </div>
+                    <div class="card-type">
+                        <i class="fas fa-tag"></i> {{ exam.exam_type|default:"Exam" }}
+                    </div>
+                </div>
+                
+                <div class="card-tags">
+                    <span class="tag tag-primary">{{ exam.category }}</span>
+                    {% if exam.mode %}
+                    <span class="tag tag-mode">{{ exam.mode }}</span>
+                    {% endif %}
+                    <span class="tag tag-location">
+                        <i class="fas fa-map-pin"></i> {{ exam.location }}
+                    </span>
+                    {% if exam.e_eligibility %}
+                    <span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer">
+                    <a href="{% url 'details' 'exam' exam.id %}" class="btn-details">
+                        <i class="fas fa-info-circle"></i> View Details
+                    </a>
+                    <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="item_type" value="exam">
+                        <input type="hidden" name="item_id" value="{{ exam.id }}">
+                        <button type="submit" class="btn-calendar">
+                            <i class="far fa-calendar-plus"></i> Add to Calendar
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-data-message">
+            <i class="fas fa-calendar-times"></i>
+            <h3>No Exams Found</h3>
+            <p>We couldn't find any exams matching "{{ query }}". Try a different search term.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Schemes Section -->
+    <section class="results-section">
+        <h2 class="section-title">
+            <i class="fas fa-landmark"></i> Government Schemes
+            <span class="title-underline"></span>
+        </h2>
+        
+        {% if schemes %}
+        <div class="card-grid">
+            {% for scheme in schemes %}
+            <div class="card card-animate">
+                <div class="card-header">
+                    <h3>{{ scheme.name }}</h3>
+                    <div class="card-date">
+                        <i class="far fa-calendar"></i> {{ scheme.date|date:"F d, Y" }}
+                    </div>
+                    <div class="card-type">
+                        <i class="fas fa-tag"></i> {{ scheme.scheme_type|default:"Scheme" }}
+                    </div>
+                </div>
+                
+                <div class="card-tags">
+                    <span class="tag tag-primary">{{ scheme.category }}</span>
+                    <span class="tag tag-location">
+                        <i class="fas fa-map-pin"></i> {{ scheme.location }}
+                    </span>
+                    {% if scheme.s_eligibility %}
+                    <span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer">
+                    <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-details">
+                        <i class="fas fa-info-circle"></i> View Details
+                    </a>
+                    <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="item_type" value="scheme">
+                        <input type="hidden" name="item_id" value="{{ scheme.id }}">
+                        <button type="submit" class="btn-calendar">
+                            <i class="far fa-calendar-plus"></i> Add to Calendar
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-data-message">
+            <i class="fas fa-file-alt"></i>
+            <h3>No Schemes Found</h3>
+            <p>We couldn't find any schemes matching "{{ query }}". Try a different search term.</p>
+        </div>
+        {% endif %}
+    </section>
+    
+    <!-- Back to Dashboard -->
+    <div class="back-button-container">
+        <a href="{% url 'dashboard' %}" class="btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Messages Container -->
+{% if messages %}
+<div class="messages-container">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}">
+        {{ message }}
+        <button class="btn-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Additional CSS for Search Results Page -->
+<style>
+    /* Search Summary Card */
+    .search-summary {
+        background: var(--card-gradient);
+        padding: 1.5rem 2rem;
+        border-radius: 16px;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+        animation: fadeIn 0.6s ease;
+    }
+    
+    .search-summary h2 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .search-summary h2 i {
+        color: var(--primary-color);
+    }
+    
+    .search-summary h2 span {
+        color: var(--primary-color);
+    }
+    
+    .results-stats {
+        display: flex;
+        gap: 2rem;
+        color: var(--text-secondary);
+        font-size: 1rem;
+    }
+    
+    .results-stats span {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .stat-exams i {
+        color: var(--danger-color);
+    }
+    
+    .stat-schemes i {
+        color: var(--success-color);
+    }
+    
+    .results-stats strong {
+        color: var(--text-primary);
+        font-size: 1.25rem;
+    }
+    
+    /* Results Section */
+    .results-section {
+        margin-bottom: 3rem;
+        animation: fadeIn 0.8s ease 0.1s both;
+    }
+    
+    .results-section:last-of-type {
+        animation-delay: 0.2s;
+    }
+    
+    /* Back Button */
+    .back-button-container {
+        text-align: center;
+        margin: 2rem 0;
+    }
+    
+    .btn-outline {
+        background: transparent;
+        color: var(--primary-color);
+        border: 2px solid var(--primary-color);
+        text-decoration: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-outline:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+    
+    /* Animation for cards */
+    @keyframes cardFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .card-animate {
+        animation: cardFadeIn 0.5s ease forwards;
+    }
+    
+    /* DARK MODE OVERRIDES - CRITICAL FOR DARK MODE TO WORK */
+    .dark-mode .search-summary h2 {
+        color: white !important;
+    }
+    
+    .dark-mode .search-summary h2 span {
+        color: var(--accent-color) !important;
+    }
+    
+    .dark-mode .search-summary h2 i {
+        color: var(--accent-color) !important;
+    }
+    
+    .dark-mode .section-title {
+        color: white !important;
+    }
+    
+    .dark-mode .card-header h3 {
+        color: white !important;
+    }
+    
+    .dark-mode .btn-outline {
+        color: white !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    .dark-mode .btn-outline:hover {
+        background: var(--primary-color) !important;
+        color: white !important;
+    }
+    
+    .dark-mode .no-data-message h3 {
+        color: white !important;
+    }
+    
+    .dark-mode .no-data-message p {
+        color: var(--text-secondary) !important;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .search-summary {
+            padding: 1rem 1.5rem;
+        }
+        
+        .search-summary h2 {
+            font-size: 1.5rem;
+        }
+        
+        .results-stats {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .container {
+            padding: 0.5rem 1rem !important;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .search-summary h2 {
+            font-size: 1.25rem;
+        }
+    }
+</style>
+
+<!-- CRITICAL: Include Dark.js and initialize dark mode -->
 <script src="{% static 'js/Dark.js' %}"></script>
 
 <script>
-
-document.addEventListener(
-    'DOMContentLoaded',
-    function() {
-
-        const cards =
-        document.querySelectorAll(
-            '.result-card'
-        )
-
-        cards.forEach(
-            (card, index) => {
-
-                card.style.animationDelay =
-                `${index * 0.1}s`
-
-                card.classList.add(
-                    'animate-in'
-                )
-
-            }
-        )
-
+// Ensure dark mode is applied on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check localStorage for dark mode preference
+    const darkMode = localStorage.getItem('darkMode');
+    if (darkMode === 'enabled') {
+        document.body.classList.add('dark-mode');
     }
-)
+    
+    // Staggered animation for cards
+    const cards = document.querySelectorAll('.card-animate');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.05}s`;
+    });
+    
+    // Auto-hide messages after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+});
 
+// Listen for dark mode changes from other pages/tabs
+window.addEventListener('storage', function(e) {
+    if (e.key === 'darkMode') {
+        if (e.newValue === 'enabled') {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
+        }
+    }
+});
 </script>
 
 {% endblock %}
