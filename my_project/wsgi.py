@@ -1,18 +1,17 @@
-import os
 import sys
-from pathlib import Path
-from dotenv import load_dotenv
+import os
 
-# Add project directory to sys.path
-path = '/home/RishijManna/PGI1'
-if path not in sys.path:
-    sys.path.append(path)
+# Your project path
+project_home = '/home/RishijManna/PGIP'
 
-# Load .env file
-load_dotenv(Path(path) / '.env')
+if project_home not in sys.path:
+    sys.path.append(project_home)
 
-# Set settings module
-os.environ['DJANGO_SETTINGS_MODULE'] = 'my_project.settings'
+os.environ.setdefault(
+    'DJANGO_SETTINGS_MODULE',
+    'my_project.settings'
+)
 
 from django.core.wsgi import get_wsgi_application
+
 application = get_wsgi_application()
