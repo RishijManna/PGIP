@@ -1,50 +1,51 @@
-// Dark Mode Toggle Functionality
+// FINAL Dark Mode Toggle
 
 function toggleDarkMode() {
     const body = document.body;
-    const darkToggle = document.getElementById('dark-toggle');
+    const toggleBtn = document.getElementById("dark-toggle");
 
-    if (!darkToggle) return;
+    if (!toggleBtn) return;
 
-    const icon = darkToggle.querySelector('i');
-    const text = darkToggle.querySelector('span');
+    const icon = toggleBtn.querySelector("i");
+    const text = toggleBtn.querySelector("span");
 
     // Toggle class
-    body.classList.toggle('dark-mode');
+    body.classList.toggle("dark-mode");
 
-    // Update UI + save preference
-    if (body.classList.contains('dark-mode')) {
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-        text.textContent = 'Light Mode';
-        localStorage.setItem('darkMode', 'enabled');
+    // Save preference
+    if (body.classList.contains("dark-mode")) {
+        localStorage.setItem("darkMode", "enabled");
+
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+        text.textContent = "Light Mode";
     } else {
-        icon.classList.remove('fa-sun');
-        icon.classList.add('fa-moon');
-        text.textContent = 'Dark Mode';
-        localStorage.setItem('darkMode', 'disabled');
+        localStorage.setItem("darkMode", "disabled");
+
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
+        text.textContent = "Dark Mode";
     }
 }
 
 
-// Load saved preference on page load
+// Load saved preference safely
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", function () {
+    const saved = localStorage.getItem("darkMode");
 
-    const darkMode = localStorage.getItem('darkMode');
-    const darkToggle = document.getElementById('dark-toggle');
+    const toggleBtn = document.getElementById("dark-toggle");
 
-    if (!darkToggle) return;
+    if (!toggleBtn) return;
 
-    const icon = darkToggle.querySelector('i');
-    const text = darkToggle.querySelector('span');
+    const icon = toggleBtn.querySelector("i");
+    const text = toggleBtn.querySelector("span");
 
-    if (darkMode === 'enabled') {
-        document.body.classList.add('dark-mode');
+    if (saved === "enabled") {
+        document.body.classList.add("dark-mode");
 
-        icon.classList.remove('fa-moon');
-        icon.classList.add('fa-sun');
-        text.textContent = 'Light Mode';
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+        text.textContent = "Light Mode";
     }
-
 });
