@@ -32,376 +32,372 @@ Dashboard
         
         <form method="get" action="{% url 'dashboard' %}" class="filter-section" id="filterForm">
             
-            <!-- Top Apply Filters Button -->
-            <div class="filter-actions-top">
-                <button type="submit" class="btn-apply-filters">
-                    <i class="fas fa-filter"></i> Apply Filters
-                </button>
-            </div>
-            
             <!-- Reset All Link -->
             <div style="text-align: center; margin-bottom: 1rem;">
                 <a href="{% url 'dashboard' %}" id="reset-link">
-                    <i class="fas fa-undo-alt"></i> Reset All
+                    <i class="fas fa-undo-alt"></i> Reset All Filters
                 </a>
             </div>
-        
             
-            <!-- Category - Updated from models.py EXAM CATEGORY_CHOICES and SCHEME_CATEGORY_CHOICES -->
+            <!-- Sort By -->
+            <div class="filter-group">
+                <h4><i class="fas fa-sort-amount-down"></i> Sort By</h4>
+                <select name="sort" class="sort-select" id="sortSelect">
+                    <option value="date">Date (Earliest First)</option>
+                    <option value="-date">Date (Latest First)</option>
+                    <option value="name">Name (A-Z)</option>
+                    <option value="-name">Name (Z-A)</option>
+                </select>
+            </div>
+        
+            <!-- Category -->
             <div class="filter-group">
                 <h4><i class="fas fa-tags"></i> Category</h4>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Engineering">
+                    <input type="checkbox" name="category" value="Engineering" class="auto-filter">
                     <span>Engineering</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Medical">
+                    <input type="checkbox" name="category" value="Medical" class="auto-filter">
                     <span>Medical</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Banking">
+                    <input type="checkbox" name="category" value="Banking" class="auto-filter">
                     <span>Banking</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Defense">
+                    <input type="checkbox" name="category" value="Defense" class="auto-filter">
                     <span>Defense</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Civil Services">
+                    <input type="checkbox" name="category" value="Civil Services" class="auto-filter">
                     <span>Civil Services</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Teaching">
+                    <input type="checkbox" name="category" value="Teaching" class="auto-filter">
                     <span>Teaching</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Law">
+                    <input type="checkbox" name="category" value="Law" class="auto-filter">
                     <span>Law</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Management">
+                    <input type="checkbox" name="category" value="Management" class="auto-filter">
                     <span>Management</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Science">
+                    <input type="checkbox" name="category" value="Science" class="auto-filter">
                     <span>Science</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Design">
+                    <input type="checkbox" name="category" value="Design" class="auto-filter">
                     <span>Design</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Employment">
+                    <input type="checkbox" name="category" value="Employment" class="auto-filter">
                     <span>Employment</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Insurance">
+                    <input type="checkbox" name="category" value="Insurance" class="auto-filter">
                     <span>Insurance</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Food Corporation">
+                    <input type="checkbox" name="category" value="Food Corporation" class="auto-filter">
                     <span>Food Corporation</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Agriculture">
+                    <input type="checkbox" name="category" value="Agriculture" class="auto-filter">
                     <span>Agriculture</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Hotel Management">
+                    <input type="checkbox" name="category" value="Hotel Management" class="auto-filter">
                     <span>Hotel Management</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Environment">
+                    <input type="checkbox" name="category" value="Environment" class="auto-filter">
                     <span>Environment</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Education">
+                    <input type="checkbox" name="category" value="Education" class="auto-filter">
                     <span>Education</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Health">
+                    <input type="checkbox" name="category" value="Health" class="auto-filter">
                     <span>Health</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Finance">
+                    <input type="checkbox" name="category" value="Finance" class="auto-filter">
                     <span>Finance</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="General">
+                    <input type="checkbox" name="category" value="General" class="auto-filter">
                     <span>General</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Entrepreneurship">
+                    <input type="checkbox" name="category" value="Entrepreneurship" class="auto-filter">
                     <span>Entrepreneurship</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Housing">
+                    <input type="checkbox" name="category" value="Housing" class="auto-filter">
                     <span>Housing</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Welfare">
+                    <input type="checkbox" name="category" value="Welfare" class="auto-filter">
                     <span>Welfare</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="category" value="Pension">
+                    <input type="checkbox" name="category" value="Pension" class="auto-filter">
                     <span>Pension</span>
                 </label>
             </div>
             
-            <!-- Exam Type - Updated from models.py EXAM_TYPE_CHOICES -->
+            <!-- Exam Type -->
             <div class="filter-group">
                 <h4><i class="fas fa-pencil-alt"></i> Exam Type</h4>
                 <label class="filter-label">
-                    <input type="checkbox" name="exam_type" value="Government">
+                    <input type="checkbox" name="exam_type" value="Government" class="auto-filter">
                     <span>Government</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="exam_type" value="Private">
+                    <input type="checkbox" name="exam_type" value="Private" class="auto-filter">
                     <span>Private</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="exam_type" value="State Level">
+                    <input type="checkbox" name="exam_type" value="State Level" class="auto-filter">
                     <span>State Level</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="exam_type" value="National Level">
+                    <input type="checkbox" name="exam_type" value="National Level" class="auto-filter">
                     <span>National Level</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="exam_type" value="University Level">
+                    <input type="checkbox" name="exam_type" value="University Level" class="auto-filter">
                     <span>University Level</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="exam_type" value="Professional">
+                    <input type="checkbox" name="exam_type" value="Professional" class="auto-filter">
                     <span>Professional</span>
                 </label>
             </div>
             
-            <!-- Scheme Type - Updated from models.py SCHEME_TYPE_CHOICES -->
+            <!-- Scheme Type -->
             <div class="filter-group">
                 <h4><i class="fas fa-hand-holding-heart"></i> Scheme Type</h4>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Central Government">
+                    <input type="checkbox" name="scheme_type" value="Central Government" class="auto-filter">
                     <span>Central Government</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="State Government">
+                    <input type="checkbox" name="scheme_type" value="State Government" class="auto-filter">
                     <span>State Government</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Welfare">
+                    <input type="checkbox" name="scheme_type" value="Welfare" class="auto-filter">
                     <span>Welfare</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Scholarship">
+                    <input type="checkbox" name="scheme_type" value="Scholarship" class="auto-filter">
                     <span>Scholarship</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Loan">
+                    <input type="checkbox" name="scheme_type" value="Loan" class="auto-filter">
                     <span>Loan</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Employment">
+                    <input type="checkbox" name="scheme_type" value="Employment" class="auto-filter">
                     <span>Employment</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Training">
+                    <input type="checkbox" name="scheme_type" value="Training" class="auto-filter">
                     <span>Training</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Pension">
+                    <input type="checkbox" name="scheme_type" value="Pension" class="auto-filter">
                     <span>Pension</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Insurance">
+                    <input type="checkbox" name="scheme_type" value="Insurance" class="auto-filter">
                     <span>Insurance</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Financial Assistance">
+                    <input type="checkbox" name="scheme_type" value="Financial Assistance" class="auto-filter">
                     <span>Financial Assistance</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Subsidy">
+                    <input type="checkbox" name="scheme_type" value="Subsidy" class="auto-filter">
                     <span>Subsidy</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="scheme_type" value="Allowance">
+                    <input type="checkbox" name="scheme_type" value="Allowance" class="auto-filter">
                     <span>Allowance</span>
                 </label>
             </div>
             
-            <!-- Location - Updated from models.py LOCATION_CHOICES -->
+            <!-- Location -->
             <div class="filter-group">
                 <h4><i class="fas fa-map-marker-alt"></i> Location</h4>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Delhi">
+                    <input type="checkbox" name="location" value="Delhi" class="auto-filter">
                     <span>Delhi</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Karnataka">
+                    <input type="checkbox" name="location" value="Karnataka" class="auto-filter">
                     <span>Karnataka</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="West Bengal">
+                    <input type="checkbox" name="location" value="West Bengal" class="auto-filter">
                     <span>West Bengal</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Hyderabad">
+                    <input type="checkbox" name="location" value="Hyderabad" class="auto-filter">
                     <span>Hyderabad</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="All India">
+                    <input type="checkbox" name="location" value="All India" class="auto-filter">
                     <span>All India</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Multiple Cities">
+                    <input type="checkbox" name="location" value="Multiple Cities" class="auto-filter">
                     <span>Multiple Cities</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Maharashtra">
+                    <input type="checkbox" name="location" value="Maharashtra" class="auto-filter">
                     <span>Maharashtra</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Telangana">
+                    <input type="checkbox" name="location" value="Telangana" class="auto-filter">
                     <span>Telangana</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Andhra Pradesh">
+                    <input type="checkbox" name="location" value="Andhra Pradesh" class="auto-filter">
                     <span>Andhra Pradesh</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Odisha">
+                    <input type="checkbox" name="location" value="Odisha" class="auto-filter">
                     <span>Odisha</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Gujarat">
+                    <input type="checkbox" name="location" value="Gujarat" class="auto-filter">
                     <span>Gujarat</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Chhattisgarh">
+                    <input type="checkbox" name="location" value="Chhattisgarh" class="auto-filter">
                     <span>Chhattisgarh</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Madhya Pradesh">
+                    <input type="checkbox" name="location" value="Madhya Pradesh" class="auto-filter">
                     <span>Madhya Pradesh</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Tamil Nadu">
+                    <input type="checkbox" name="location" value="Tamil Nadu" class="auto-filter">
                     <span>Tamil Nadu</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Uttarakhand">
+                    <input type="checkbox" name="location" value="Uttarakhand" class="auto-filter">
                     <span>Uttarakhand</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Kerala">
+                    <input type="checkbox" name="location" value="Kerala" class="auto-filter">
                     <span>Kerala</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Ahmedabad">
+                    <input type="checkbox" name="location" value="Ahmedabad" class="auto-filter">
                     <span>Ahmedabad</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Rural India">
+                    <input type="checkbox" name="location" value="Rural India" class="auto-filter">
                     <span>Rural India</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="location" value="Coastal Cities">
+                    <input type="checkbox" name="location" value="Coastal Cities" class="auto-filter">
                     <span>Coastal Cities</span>
                 </label>
             </div>
             
-            <!-- Mode - Updated from models.py MODE_CHOICES -->
+            <!-- Mode -->
             <div class="filter-group">
                 <h4><i class="fas fa-laptop"></i> Mode</h4>
                 <label class="filter-label">
-                    <input type="checkbox" name="mode" value="Online">
+                    <input type="checkbox" name="mode" value="Online" class="auto-filter">
                     <span>Online</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="mode" value="Offline">
+                    <input type="checkbox" name="mode" value="Offline" class="auto-filter">
                     <span>Offline</span>
                 </label>
             </div>
             
-            <!-- Exam Eligibility - Updated from models.py ELIGIBILITY_CHOICES -->
+            <!-- Exam Eligibility -->
             <div class="filter-group">
                 <h4><i class="fas fa-graduation-cap"></i> Exam Eligibility</h4>
                 <label class="filter-label">
-                    <input type="checkbox" name="e_eligibility" value="10th Pass">
+                    <input type="checkbox" name="e_eligibility" value="10th Pass" class="auto-filter">
                     <span>10th Pass</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="e_eligibility" value="12th Pass">
+                    <input type="checkbox" name="e_eligibility" value="12th Pass" class="auto-filter">
                     <span>12th Pass</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="e_eligibility" value="Graduate">
+                    <input type="checkbox" name="e_eligibility" value="Graduate" class="auto-filter">
                     <span>Graduate</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="e_eligibility" value="Post Graduate">
+                    <input type="checkbox" name="e_eligibility" value="Post Graduate" class="auto-filter">
                     <span>Post Graduate</span>
                 </label>
             </div>
             
-            <!-- Scheme Eligibility - Updated from models.py SCHEME_ELIGIBILITY_CHOICES -->
+            <!-- Scheme Eligibility -->
             <div class="filter-group">
                 <h4><i class="fas fa-user-check"></i> Scheme Eligibility</h4>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="10th Pass">
+                    <input type="checkbox" name="s_eligibility" value="10th Pass" class="auto-filter">
                     <span>10th Pass</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="12th Pass">
+                    <input type="checkbox" name="s_eligibility" value="12th Pass" class="auto-filter">
                     <span>12th Pass</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="Graduate">
+                    <input type="checkbox" name="s_eligibility" value="Graduate" class="auto-filter">
                     <span>Graduate</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="Postgraduate">
+                    <input type="checkbox" name="s_eligibility" value="Postgraduate" class="auto-filter">
                     <span>Postgraduate</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="Open to All">
+                    <input type="checkbox" name="s_eligibility" value="Open to All" class="auto-filter">
                     <span>Open to All</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="BPL Families">
+                    <input type="checkbox" name="s_eligibility" value="BPL Families" class="auto-filter">
                     <span>BPL Families</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="SC/ST/Women">
+                    <input type="checkbox" name="s_eligibility" value="SC/ST/Women" class="auto-filter">
                     <span>SC/ST/Women</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="Farmers">
+                    <input type="checkbox" name="s_eligibility" value="Farmers" class="auto-filter">
                     <span>Farmers</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="Girl Students">
+                    <input type="checkbox" name="s_eligibility" value="Girl Students" class="auto-filter">
                     <span>Girl Students</span>
                 </label>
                 <label class="filter-label">
-                    <input type="checkbox" name="s_eligibility" value="Senior Citizens">
+                    <input type="checkbox" name="s_eligibility" value="Senior Citizens" class="auto-filter">
                     <span>Senior Citizens</span>
                 </label>
-            </div>
-            
-            <!-- Bottom Apply Filters Button -->
-            <div class="filter-reset">
-                <button type="submit" class="btn-reset">
-                    <i class="fas fa-filter"></i> Apply Filters
-                </button>
             </div>
             
         </form>
     </div>
     
     <!-- Main Content -->
-    <div class="content">
+    <div class="content" id="mainContent">
         
         <!-- Upcoming Exams Section -->
         <h2 class="section-title">
@@ -409,56 +405,58 @@ Dashboard
             <span class="title-underline"></span>
         </h2>
         
-        {% if exams %}
-        <div class="card-grid">
-            {% for exam in exams %}
-            <div class="card card-animate">
-                <div class="card-header">
-                    <h3>{{ exam.name }}</h3>
-                    <div class="card-date">
-                        <i class="far fa-calendar"></i> {{ exam.date|date:"F d, Y" }}
+        <div id="examsContainer">
+            {% if exams %}
+            <div class="card-grid">
+                {% for exam in exams %}
+                <div class="card card-animate">
+                    <div class="card-header">
+                        <h3>{{ exam.name }}</h3>
+                        <div class="card-date">
+                            <i class="far fa-calendar"></i> {{ exam.date|date:"F d, Y" }}
+                        </div>
+                        <div class="card-type">
+                            <i class="fas fa-tag"></i> {{ exam.exam_type|default:"Exam" }}
+                        </div>
                     </div>
-                    <div class="card-type">
-                        <i class="fas fa-tag"></i> {{ exam.exam_type|default:"Exam" }}
+                    
+                    <div class="card-tags">
+                        <span class="tag tag-primary">{{ exam.category }}</span>
+                        {% if exam.mode %}
+                        <span class="tag tag-mode">{{ exam.mode }}</span>
+                        {% endif %}
+                        <span class="tag tag-location">
+                            <i class="fas fa-map-pin"></i> {{ exam.location }}
+                        </span>
+                        {% if exam.e_eligibility %}
+                        <span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer">
+                        <a href="{% url 'details' 'exam' exam.id %}" class="btn-details">
+                            <i class="fas fa-info-circle"></i> View Details
+                        </a>
+                        <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="exam">
+                            <input type="hidden" name="item_id" value="{{ exam.id }}">
+                            <button type="submit" class="btn-calendar">
+                                <i class="far fa-calendar-plus"></i> Add to Calendar
+                            </button>
+                        </form>
                     </div>
                 </div>
-                
-                <div class="card-tags">
-                    <span class="tag tag-primary">{{ exam.category }}</span>
-                    {% if exam.mode %}
-                    <span class="tag tag-mode">{{ exam.mode }}</span>
-                    {% endif %}
-                    <span class="tag tag-location">
-                        <i class="fas fa-map-pin"></i> {{ exam.location }}
-                    </span>
-                    {% if exam.e_eligibility %}
-                    <span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>
-                    {% endif %}
-                </div>
-                
-                <div class="card-footer">
-                    <a href="{% url 'details' 'exam' exam.id %}" class="btn-details">
-                        <i class="fas fa-info-circle"></i> View Details
-                    </a>
-                    <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="item_type" value="exam">
-                        <input type="hidden" name="item_id" value="{{ exam.id }}">
-                        <button type="submit" class="btn-calendar">
-                            <i class="far fa-calendar-plus"></i> Add to Calendar
-                        </button>
-                    </form>
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% else %}
+            <div class="no-data-message">
+                <i class="fas fa-calendar-times"></i>
+                <h3>No Upcoming Exams</h3>
+                <p>There are no exams matching your criteria at this time.</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="no-data-message">
-            <i class="fas fa-calendar-times"></i>
-            <h3>No Upcoming Exams</h3>
-            <p>There are no exams matching your criteria at this time.</p>
-        </div>
-        {% endif %}
         
         <!-- Government Schemes Section -->
         <h2 class="section-title" style="margin-top: 3rem;">
@@ -466,69 +464,64 @@ Dashboard
             <span class="title-underline"></span>
         </h2>
         
-        {% if schemes %}
-        <div class="card-grid">
-            {% for scheme in schemes %}
-            <div class="card card-animate">
-                <div class="card-header">
-                    <h3>{{ scheme.name }}</h3>
-                    <div class="card-date">
-                        <i class="far fa-calendar"></i> {{ scheme.date|date:"F d, Y" }}
+        <div id="schemesContainer">
+            {% if schemes %}
+            <div class="card-grid">
+                {% for scheme in schemes %}
+                <div class="card card-animate">
+                    <div class="card-header">
+                        <h3>{{ scheme.name }}</h3>
+                        <div class="card-date">
+                            <i class="far fa-calendar"></i> {{ scheme.date|date:"F d, Y" }}
+                        </div>
+                        <div class="card-type">
+                            <i class="fas fa-tag"></i> {{ scheme.scheme_type|default:"Scheme" }}
+                        </div>
                     </div>
-                    <div class="card-type">
-                        <i class="fas fa-tag"></i> {{ scheme.scheme_type|default:"Scheme" }}
+                    
+                    <div class="card-tags">
+                        <span class="tag tag-primary">{{ scheme.category }}</span>
+                        <span class="tag tag-location">
+                            <i class="fas fa-map-pin"></i> {{ scheme.location }}
+                        </span>
+                        {% if scheme.s_eligibility %}
+                        <span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-footer">
+                        <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-details">
+                            <i class="fas fa-info-circle"></i> View Details
+                        </a>
+                        <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="scheme">
+                            <input type="hidden" name="item_id" value="{{ scheme.id }}">
+                            <button type="submit" class="btn-calendar">
+                                <i class="far fa-calendar-plus"></i> Add to Calendar
+                            </button>
+                        </form>
                     </div>
                 </div>
-                
-                <div class="card-tags">
-                    <span class="tag tag-primary">{{ scheme.category }}</span>
-                    <span class="tag tag-location">
-                        <i class="fas fa-map-pin"></i> {{ scheme.location }}
-                    </span>
-                    {% if scheme.s_eligibility %}
-                    <span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>
-                    {% endif %}
-                </div>
-                
-                <div class="card-footer">
-                    <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-details">
-                        <i class="fas fa-info-circle"></i> View Details
-                    </a>
-                    <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="item_type" value="scheme">
-                        <input type="hidden" name="item_id" value="{{ scheme.id }}">
-                        <button type="submit" class="btn-calendar">
-                            <i class="far fa-calendar-plus"></i> Add to Calendar
-                        </button>
-                    </form>
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
+            {% else %}
+            <div class="no-data-message">
+                <i class="fas fa-file-alt"></i>
+                <h3>No Government Schemes</h3>
+                <p>There are no schemes matching your criteria at this time.</p>
+            </div>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="no-data-message">
-            <i class="fas fa-file-alt"></i>
-            <h3>No Government Schemes</h3>
-            <p>There are no schemes matching your criteria at this time.</p>
-        </div>
-        {% endif %}
         
     </div>
 </div>
 
-<!-- Overlay and Details Panel -->
-<div class="overlay" id="overlay" onclick="closeDetails()"></div>
-
-<div class="details-panel" id="detailsPanel">
-    <div class="details-header">
-        <h3 id="detailsTitle">Details</h3>
-        <button class="close-details" onclick="closeDetails()">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-    <div class="details-content" id="detailsContent">
-        <!-- Dynamic content will be loaded here -->
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-primary); padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-heavy);">
+        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--primary-color);"></i>
+        <p style="margin-top: 1rem; color: var(--text-primary);">Updating results...</p>
     </div>
 </div>
 
@@ -546,59 +539,126 @@ Dashboard
 </div>
 {% endif %}
 
-<!-- CSS for top filter button -->
 <style>
-    .filter-actions-top {
-        margin-bottom: 1rem;
-        text-align: center;
-    }
-    
-    .btn-apply-filters {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        box-shadow: var(--shadow-light);
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .btn-apply-filters:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-medium);
-        background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
-    }
-    
-    .btn-apply-filters i {
-        font-size: 0.9rem;
-    }
-    
-    .dark-mode .btn-apply-filters {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-        color: white;
-    }
-    
-    /* Make filter section scrollable with max height */
     .filter-section {
         max-height: 70vh;
         overflow-y: auto;
         padding-right: 0.5rem;
     }
+    
+    #reset-link {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    #reset-link:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-light);
+    }
+    
+    .auto-filter {
+        cursor: pointer;
+    }
 </style>
 
+<script src="{% static 'js/Dark.js' %}"></script>
+
 <script>
-// Preserve selected filter values from URL parameters
+// Auto-filter functionality
 document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const autoFilters = document.querySelectorAll('.auto-filter');
+    const sortSelect = document.getElementById('sortSelect');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    // Function to update results via AJAX
+    async function updateResults() {
+        // Show loading overlay
+        loadingOverlay.style.display = 'flex';
+        
+        // Build form data
+        const formData = new FormData(filterForm);
+        const params = new URLSearchParams(formData);
+        
+        try {
+            const response = await fetch(`{% url 'dashboard' %}?${params.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            
+            if (response.ok) {
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Update exams section
+                const newExams = doc.getElementById('examsContainer');
+                if (newExams) {
+                    document.getElementById('examsContainer').innerHTML = newExams.innerHTML;
+                }
+                
+                // Update schemes section
+                const newSchemes = doc.getElementById('schemesContainer');
+                if (newSchemes) {
+                    document.getElementById('schemesContainer').innerHTML = newSchemes.innerHTML;
+                }
+                
+                // Update URL without page reload
+                const newUrl = `${window.location.pathname}?${params.toString()}`;
+                window.history.pushState({}, '', newUrl);
+            }
+        } catch (error) {
+            console.error('Error updating filters:', error);
+        } finally {
+            // Hide loading overlay
+            loadingOverlay.style.display = 'none';
+            
+            // Re-attach event listeners to new buttons
+            attachCardEvents();
+        }
+    }
+    
+    // Debounce function to prevent too many requests
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    const debouncedUpdate = debounce(updateResults, 300);
+    
+    // Add event listeners to all filter checkboxes
+    autoFilters.forEach(filter => {
+        filter.addEventListener('change', function() {
+            debouncedUpdate();
+        });
+    });
+    
+    // Add event listener to sort select
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            updateResults();
+        });
+    }
+    
+    // Preserve selected filter values from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Check checkboxes based on URL parameters
     document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         const values = urlParams.getAll(checkbox.name);
         if (values.includes(checkbox.value)) {
@@ -606,52 +666,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Set sort select value
-    const sortSelect = document.querySelector('.sort-select');
     if (sortSelect) {
         const sortValue = urlParams.get('sort');
         if (sortValue) {
             sortSelect.value = sortValue;
         }
     }
-});
-
-// Details panel functions
-function openDetails(itemType, itemId) {
-    document.getElementById('overlay').classList.add('active');
-    document.getElementById('detailsPanel').classList.add('active');
-    document.getElementById('detailsTitle').textContent = 'Loading...';
-    document.getElementById('detailsContent').innerHTML = '<div class="no-data-message"><i class="fas fa-spinner fa-spin"></i><p>Loading details...</p></div>';
     
-    // Fetch details via AJAX
-    fetch(`/${itemType}/${itemId}/details/`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('detailsContent').innerHTML = `<p class="no-data-message">${data.error}</p>`;
-            } else {
-                document.getElementById('detailsTitle').textContent = data.name;
-                document.getElementById('detailsContent').innerHTML = data.details;
-            }
-        })
-        .catch(error => {
-            document.getElementById('detailsContent').innerHTML = '<p class="no-data-message">Error loading details. Please try again.</p>';
+    // Function to attach events to dynamically added elements
+    function attachCardEvents() {
+        // Re-attach any card-specific event listeners here
+        document.querySelectorAll('.btn-calendar').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Calendar button functionality
+            });
         });
-}
-
-function closeDetails() {
-    document.getElementById('overlay').classList.remove('active');
-    document.getElementById('detailsPanel').classList.remove('active');
-}
-
-// Auto-hide messages after 5 seconds
-setTimeout(function() {
-    document.querySelectorAll('.alert').forEach(alert => {
-        alert.style.transition = 'opacity 0.5s';
-        alert.style.opacity = '0';
-        setTimeout(() => alert.remove(), 500);
+    }
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Update checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            const values = urlParams.getAll(checkbox.name);
+            checkbox.checked = values.includes(checkbox.value);
+        });
+        
+        // Update sort select
+        if (sortSelect) {
+            const sortValue = urlParams.get('sort');
+            if (sortValue) {
+                sortSelect.value = sortValue;
+            }
+        }
+        
+        // Update results
+        updateResults();
     });
-}, 5000);
+    
+    // Auto-hide messages after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(alert => {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+});
 </script>
 
 {% endblock %}

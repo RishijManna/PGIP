@@ -1,0 +1,104 @@
+<!-- Exams Container -->
+<div id="examsContainer">
+    {% if exams %}
+    <div class="card-grid">
+        {% for exam in exams %}
+        <div class="card card-animate">
+            <div class="card-header">
+                <h3>{{ exam.name }}</h3>
+                <div class="card-date">
+                    <i class="far fa-calendar"></i> {{ exam.date|date:"F d, Y" }}
+                </div>
+                <div class="card-type">
+                    <i class="fas fa-tag"></i> {{ exam.exam_type|default:"Exam" }}
+                </div>
+            </div>
+            
+            <div class="card-tags">
+                <span class="tag tag-primary">{{ exam.category }}</span>
+                {% if exam.mode %}
+                <span class="tag tag-mode">{{ exam.mode }}</span>
+                {% endif %}
+                <span class="tag tag-location">
+                    <i class="fas fa-map-pin"></i> {{ exam.location }}
+                </span>
+                {% if exam.e_eligibility %}
+                <span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>
+                {% endif %}
+            </div>
+            
+            <div class="card-footer">
+                <a href="{% url 'details' 'exam' exam.id %}" class="btn-details">
+                    <i class="fas fa-info-circle"></i> View Details
+                </a>
+                <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="item_type" value="exam">
+                    <input type="hidden" name="item_id" value="{{ exam.id }}">
+                    <button type="submit" class="btn-calendar">
+                        <i class="far fa-calendar-plus"></i> Add to Calendar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-data-message">
+        <i class="fas fa-calendar-times"></i>
+        <h3>No Upcoming Exams</h3>
+        <p>There are no exams matching your criteria at this time.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Schemes Container -->
+<div id="schemesContainer">
+    {% if schemes %}
+    <div class="card-grid">
+        {% for scheme in schemes %}
+        <div class="card card-animate">
+            <div class="card-header">
+                <h3>{{ scheme.name }}</h3>
+                <div class="card-date">
+                    <i class="far fa-calendar"></i> {{ scheme.date|date:"F d, Y" }}
+                </div>
+                <div class="card-type">
+                    <i class="fas fa-tag"></i> {{ scheme.scheme_type|default:"Scheme" }}
+                </div>
+            </div>
+            
+            <div class="card-tags">
+                <span class="tag tag-primary">{{ scheme.category }}</span>
+                <span class="tag tag-location">
+                    <i class="fas fa-map-pin"></i> {{ scheme.location }}
+                </span>
+                {% if scheme.s_eligibility %}
+                <span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>
+                {% endif %}
+            </div>
+            
+            <div class="card-footer">
+                <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-details">
+                    <i class="fas fa-info-circle"></i> View Details
+                </a>
+                <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="item_type" value="scheme">
+                    <input type="hidden" name="item_id" value="{{ scheme.id }}">
+                    <button type="submit" class="btn-calendar">
+                        <i class="far fa-calendar-plus"></i> Add to Calendar
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-data-message">
+        <i class="fas fa-file-alt"></i>
+        <h3>No Government Schemes</h3>
+        <p>There are no schemes matching your criteria at this time.</p>
+    </div>
+    {% endif %}
+</div>

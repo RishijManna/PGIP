@@ -44,40 +44,53 @@ def dashboard(request):
     modes = request.GET.getlist('mode')
     e_eligibilities = request.GET.getlist('e_eligibility')
     s_eligibilities = request.GET.getlist('s_eligibility')
+    sort = request.GET.get('sort', 'date')
 
     # Apply filters to exams
     if exam_types:
         exams = exams.filter(exam_type__in=exam_types)
-
     if locations:
         exams = exams.filter(location__in=locations)
-
     if categories:
         exams = exams.filter(category__in=categories)
-
     if modes:
         exams = exams.filter(mode__in=modes)
-
     if e_eligibilities:
         exams = exams.filter(e_eligibility__in=e_eligibilities)
 
     # Apply filters to schemes
     if scheme_types:
         schemes = schemes.filter(scheme_type__in=scheme_types)
-
     if locations:
         schemes = schemes.filter(location__in=locations)
-
     if categories:
         schemes = schemes.filter(category__in=categories)
-
     if s_eligibilities:
         schemes = schemes.filter(s_eligibility__in=s_eligibilities)
+
+    # Apply sorting
+    if sort == 'date':
+        exams = exams.order_by('date')
+        schemes = schemes.order_by('date')
+    elif sort == '-date':
+        exams = exams.order_by('-date')
+        schemes = schemes.order_by('-date')
+    elif sort == 'name':
+        exams = exams.order_by('name')
+        schemes = schemes.order_by('name')
+    elif sort == '-name':
+        exams = exams.order_by('-name')
+        schemes = schemes.order_by('-name')
 
     context = {
         'schemes': schemes,
         'exams': exams,
     }
+    
+    # Check if it's an AJAX request
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'dashboard_content.html', context)
+    
     return render(request, 'dashboard.html', context)
 
 # Search Feature
