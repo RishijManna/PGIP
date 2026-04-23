@@ -13,18 +13,25 @@ load_dotenv()
 # =====================================
 # Security
 # =====================================
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "unsafe-secret-key"
+)
 
-# DEBUG from env (default True for local)
-DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
+# DEBUG (True locally, False in production)
+DEBUG = os.environ.get(
+    "DEBUG",
+    "True"
+).lower() == "true"
 
-# Host settings
-PYTHONANYWHERE_DOMAIN = "rishijmanna.pythonanywhere.com"
-
-if DEBUG:
-    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
-else:
-    ALLOWED_HOSTS = [PYTHONANYWHERE_DOMAIN]
+# =====================================
+# Host settings (IMPORTANT)
+# =====================================
+ALLOWED_HOSTS = [
+    "rishijmanna.pythonanywhere.com",
+    "localhost",
+    "127.0.0.1",
+]
 
 # =====================================
 # Apps
@@ -37,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'my_app',  # your app here
+    'my_app',
 ]
 
 # =====================================
@@ -45,7 +52,9 @@ INSTALLED_APPS = [
 # =====================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # static files for prod
+
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -55,7 +64,9 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'my_project.urls'
+
 WSGI_APPLICATION = 'my_project.wsgi.application'
+
 ASGI_APPLICATION = 'my_project.asgi.application'
 
 # =====================================
@@ -63,13 +74,21 @@ ASGI_APPLICATION = 'my_project.asgi.application'
 # =====================================
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'core' / 'templates'],
+        'BACKEND':
+        'django.template.backends.django.DjangoTemplates',
+
+        'DIRS': [
+            BASE_DIR / 'core' / 'templates'
+        ],
+
         'APP_DIRS': True,
+
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+
                 'django.contrib.auth.context_processors.auth',
+
                 'django.contrib.messages.context_processors.messages',
             ],
         },
@@ -86,55 +105,93 @@ DATABASES = {
     )
 }
 
-if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
-    DATABASES['default']['OPTIONS'] = {'sslmode': 'require'}
+if DATABASES['default']['ENGINE'] == \
+        'django.db.backends.postgresql':
+
+    DATABASES['default']['OPTIONS'] = {
+        'sslmode': 'require'
+    }
 
 # =====================================
 # Password validation
 # =====================================
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'
+    },
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.MinimumLengthValidator'
+    },
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.CommonPasswordValidator'
+    },
+    {
+        'NAME':
+        'django.contrib.auth.password_validation.NumericPasswordValidator'
+    },
 ]
 
 # =====================================
 # Internationalization
 # =====================================
 LANGUAGE_CODE = 'en-us'
+
 TIME_ZONE = 'UTC'
+
 USE_I18N = True
+
 USE_TZ = True
 
 # =====================================
 # Static Files
 # =====================================
 STATIC_URL = '/static/'
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / 'core' / 'static']
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+STATICFILES_DIRS = [
+    BASE_DIR / 'core' / 'static'
+]
+
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
 
 # =====================================
 # Media Files
 # =====================================
 MEDIA_URL = '/media/'
+
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # =====================================
-# Auth
+# Authentication
 # =====================================
 LOGIN_URL = '/login/'
 
 # =====================================
 # Email
 # =====================================
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = (
+    'django.core.mail.backends.smtp.EmailBackend'
+)
+
 EMAIL_HOST = 'smtp.gmail.com'
+
 EMAIL_PORT = 587
+
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+
+EMAIL_HOST_USER = os.environ.get(
+    "EMAIL_HOST_USER"
+)
+
+EMAIL_HOST_PASSWORD = os.environ.get(
+    "EMAIL_HOST_PASSWORD"
+)
 
 # =====================================
 # Default Auto Field
