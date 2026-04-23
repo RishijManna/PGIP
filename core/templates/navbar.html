@@ -1,59 +1,49 @@
+<!-- Navigation Bar -->
 <div class="navbar">
-
     <div class="nav-brand">
         <i class="fas fa-graduation-cap"></i>
         PGIP
     </div>
 
     <div class="nav-left">
-
-        <a href="{% url 'dashboard' %}">
+        <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
             <i class="fas fa-th-large"></i>
-            Dashboard
+            <span>Dashboard</span>
         </a>
-
-        <a href="{% url 'profile' %}">
+        <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
             <i class="fas fa-user"></i>
-            Profile
+            <span>Profile</span>
         </a>
-
-        <a href="{% url 'calendar' %}">
+        <a href="{% url 'calendar' %}" class="{% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
             <i class="fas fa-calendar"></i>
-            Calendar
+            <span>Calendar</span>
         </a>
-
-        <a href="{% url 'recommendations' %}">
+        <a href="{% url 'recommendations' %}" class="{% if request.resolver_match.url_name == 'recommendations' %}active{% endif %}">
             <i class="fas fa-lightbulb"></i>
-            Recommendations
+            <span>Recommendations</span>
         </a>
-
-        <a href="{% url 'contact' %}">
+        <a href="{% url 'contact' %}" class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}">
             <i class="fas fa-envelope"></i>
-            Contact
+            <span>Contact</span>
         </a>
-
     </div>
 
     <div class="nav-right">
-
-        <button id="dark-toggle">
+        <button class="dark-btn" id="dark-toggle" onclick="toggleDarkMode()">
             <i class="fas fa-moon"></i>
+            <span>Dark Mode</span>
         </button>
 
         {% if user.is_authenticated %}
-
         <a href="{% url 'logout' %}" class="btn-logout">
-            Logout
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
         </a>
-
         {% else %}
-
-        <a href="{% url 'login' %}">
-            Login
+        <a href="{% url 'login' %}" class="btn-logout">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Login</span>
         </a>
-
         {% endif %}
-
     </div>
-
 </div>

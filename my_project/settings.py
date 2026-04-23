@@ -19,7 +19,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
 DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 
 # Host settings
-PYTHONANYWHERE_DOMAIN = "RishijManna.pythonanywhere.com"
+PYTHONANYWHERE_DOMAIN = "rishijmanna.pythonanywhere.com"
 
 if DEBUG:
     ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
