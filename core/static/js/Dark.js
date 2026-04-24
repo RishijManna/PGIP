@@ -1,51 +1,91 @@
-// FINAL Dark Mode Toggle
+(function () {
+    const STORAGE_KEYS = ["darkMode", "dark-mode"];
 
-function toggleDarkMode() {
-    const body = document.body;
-    const toggleBtn = document.getElementById("dark-toggle");
+    function readSavedTheme() {
+        try {
+            return (
+                localStorage.getItem(STORAGE_KEYS[0]) ||
+                localStorage.getItem(STORAGE_KEYS[1])
+            );
+        } catch (error) {
+            return null;
+        }
+    }
 
-    if (!toggleBtn) return;
+    function saveTheme(isDarkMode) {
+        try {
+            const value = isDarkMode ? "enabled" : "disabled";
+            STORAGE_KEYS.forEach((key) => localStorage.setItem(key, value));
+        } catch (error) {
+            // Theme should still toggle even when browser storage is blocked.
+        }
+    }
 
-    const icon = toggleBtn.querySelector("i");
-    const text = toggleBtn.querySelector("span");
+    function setButtonState(isDarkMode) {
+        const button = document.getElementById("dark-toggle");
+        if (!button) return;
 
-    // Toggle class
-    body.classList.toggle("dark-mode");
+        const icon = button.querySelector("i");
+        const label = button.querySelector("span");
 
-    // Save preference
-    if (body.classList.contains("dark-mode")) {
-        localStorage.setItem("darkMode", "enabled");
+        if (icon) {
+            icon.classList.remove(isDarkMode ? "fa-moon" : "fa-sun");
+            icon.classList.add(isDarkMode ? "fa-sun" : "fa-moon");
+        }
 
-        icon.classList.remove("fa-moon");
-        icon.classList.add("fa-sun");
-        text.textContent = "Light Mode";
+        if (label) {
+            label.textContent = isDarkMode ? "Light Mode" : "Dark Mode";
+        }
+
+        button.setAttribute("aria-pressed", String(isDarkMode));
+        button.setAttribute(
+            "aria-label",
+            isDarkMode ? "Switch to light mode" : "Switch to dark mode"
+        );
+    }
+
+    function applyTheme(isDarkMode, persist) {
+        document.body.classList.toggle("dark-mode", isDarkMode);
+        document.documentElement.classList.toggle("dark-mode", isDarkMode);
+        document.documentElement.setAttribute(
+            "data-theme",
+            isDarkMode ? "dark" : "light"
+        );
+        setButtonState(isDarkMode);
+
+        if (persist) {
+            saveTheme(isDarkMode);
+        }
+    }
+
+    function toggleDarkMode(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        const isDarkMode = !document.body.classList.contains("dark-mode");
+        applyTheme(isDarkMode, true);
+    }
+
+    function initializeDarkMode() {
+        const savedTheme = readSavedTheme();
+        applyTheme(savedTheme === "enabled", false);
+
+        const button = document.getElementById("dark-toggle");
+        if (!button) return;
+
+        button.removeEventListener("click", toggleDarkMode);
+        button.addEventListener("click", toggleDarkMode);
+    }
+
+    window.toggleDarkMode = toggleDarkMode;
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializeDarkMode, {
+            once: true,
+        });
     } else {
-        localStorage.setItem("darkMode", "disabled");
-
-        icon.classList.remove("fa-sun");
-        icon.classList.add("fa-moon");
-        text.textContent = "Dark Mode";
+        initializeDarkMode();
     }
-}
-
-
-// Load saved preference safely
-
-document.addEventListener("DOMContentLoaded", function () {
-    const saved = localStorage.getItem("darkMode");
-
-    const toggleBtn = document.getElementById("dark-toggle");
-
-    if (!toggleBtn) return;
-
-    const icon = toggleBtn.querySelector("i");
-    const text = toggleBtn.querySelector("span");
-
-    if (saved === "enabled") {
-        document.body.classList.add("dark-mode");
-
-        icon.classList.remove("fa-moon");
-        icon.classList.add("fa-sun");
-        text.textContent = "Light Mode";
-    }
-});
+})();

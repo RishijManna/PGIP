@@ -28,9 +28,8 @@ Personalized Recommendations
         </h1>
 
         <p>
-            Based on your profile and interests,
-            we've curated these opportunities
-            just for you
+            AI-ranked using your profile, interests,
+            eligibility, location, and opportunity details
         </p>
 
         {% if interests %}
@@ -104,6 +103,22 @@ Personalized Recommendations
 
                         </p>
 
+                        <div class="ai-match">
+
+                            <span class="ai-score">
+                                {{ exam.ai_score }}% match
+                            </span>
+
+                            {% for reason in exam.ai_reasons %}
+
+                            <span class="ai-reason">
+                                {{ reason }}
+                            </span>
+
+                            {% endfor %}
+
+                        </div>
+
                     </div>
 
                     <div class="recom-actions">
@@ -176,6 +191,22 @@ Personalized Recommendations
 
                         </p>
 
+                        <div class="ai-match">
+
+                            <span class="ai-score">
+                                {{ scheme.ai_score }}% match
+                            </span>
+
+                            {% for reason in scheme.ai_reasons %}
+
+                            <span class="ai-reason">
+                                {{ reason }}
+                            </span>
+
+                            {% endfor %}
+
+                        </div>
+
                     </div>
 
                     <div class="recom-actions">
@@ -209,7 +240,5 @@ Personalized Recommendations
 
 </div>
 
-
-<script src="{% static 'js/Dark.js' %}"></script>
 
 {% endblock %}
