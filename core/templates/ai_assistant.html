@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+PGIP AI Assistant
+{% endblock %}
+
+{% block content %}
+
+<div class="ai-page-shell">
+
+    <section class="ai-hero">
+        <div>
+            <span class="eyebrow">
+                <i class="fas fa-sparkles"></i>
+                RAG-powered guidance
+            </span>
+
+            <h1>
+                Ask PGIP AI about schemes, exams, eligibility, and documents
+            </h1>
+
+            <p>
+                The assistant searches your portal data and your profile before answering, so every response stays grounded in the records available here.
+            </p>
+        </div>
+
+        <div class="ai-profile-snapshot">
+            <span>Profile context</span>
+            <strong>{{ profile.education|default:"Education missing" }}</strong>
+            <p>{{ profile.location|default:"Location missing" }} · {{ profile.income|default:"Income missing" }}</p>
+        </div>
+    </section>
+
+    <section class="ai-workspace">
+        <div class="ai-chat-panel">
+            <div class="ai-chat-header">
+                <div>
+                    <h2>PGIP AI Chat</h2>
+                    <p>Ask in natural language. Example: "Which scholarships fit my profile?"</p>
+                </div>
+                <span class="ai-status" id="aiProvider">Ready</span>
+            </div>
+
+            <div class="ai-chat-messages" id="aiMessages">
+                <div class="chat-bubble assistant">
+                    <strong>PGIP AI</strong>
+                    <p>Hi {{ request.user.first_name|default:request.user.username }}. Ask me which schemes or exams match your profile, why you may be eligible, or which documents to keep ready.</p>
+                </div>
+            </div>
+
+            <form class="ai-chat-form" id="aiChatForm">
+                {% csrf_token %}
+                <input
+                    type="text"
+                    id="aiQuestion"
+                    name="message"
+                    placeholder="Ask about schemes, exams, deadlines, eligibility..."
+                    autocomplete="off"
+                    required>
+                <button type="submit">
+                    <i class="fas fa-paper-plane"></i>
+                    Send
+                </button>
+            </form>
+        </div>
+
+        <aside class="ai-suggestion-panel">
+            <h3>Try asking</h3>
+
+            <button class="prompt-chip" type="button">Which schemes am I eligible for?</button>
+            <button class="prompt-chip" type="button">What should I study for JEE Main?</button>
+            <button class="prompt-chip" type="button">What documents should I prepare?</button>
+            <button class="prompt-chip" type="button">Which job opportunities match my skills?</button>
+            <button class="prompt-chip" type="button">I have offers from TCS, Infosys, Wipro and Accenture. Which should I join?</button>
+
+            <div class="ai-source-list" id="aiSources">
+                <h3>Recommended now</h3>
+
+                {% for exam in recommended_exams %}
+                <a href="{% url 'details' 'exam' exam.id %}" class="ai-source-card">
+                    <span>Exam</span>
+                    <strong>{{ exam.name }}</strong>
+                    <small>{{ exam.category }} · {{ exam.location }}</small>
+                </a>
+                {% endfor %}
+
+                {% for scheme in recommended_schemes %}
+                <a href="{% url 'details' 'scheme' scheme.id %}" class="ai-source-card">
+                    <span>Scheme</span>
+                    <strong>{{ scheme.name }}</strong>
+                    <small>{{ scheme.category }} · {{ scheme.location }}</small>
+                </a>
+                {% endfor %}
+
+                {% for job in recommended_jobs %}
+                <a href="{% url 'details' 'job' job.id %}" class="ai-source-card">
+                    <span>Job</span>
+                    <strong>{{ job.title }}</strong>
+                    <small>{{ job.company_or_org|default:job.source_name }} · {{ job.location }}</small>
+                </a>
+                {% endfor %}
+            </div>
+        </aside>
+    </section>
+
+</div>
+
+<script>
+    window.PGIP_AI_ENDPOINT = "{% url 'ai_assistant_api' %}";
+</script>
+<script src="{% static 'js/ai_assistant.js' %}"></script>
+
+{% endblock %}

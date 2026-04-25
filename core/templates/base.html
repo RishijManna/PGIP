@@ -26,8 +26,10 @@
 
     {% include "navbar.html" %}
 
-    {% block content %}
-    {% endblock %}
+    <main class="app-main">
+        {% block content %}
+        {% endblock %}
+    </main>
 
     <!-- DARK MODE SCRIPT -->
     <script src="{% static 'js/Dark.js' %}?v=3"></script>

@@ -22,6 +22,20 @@ class TaskForm(forms.ModelForm):
 
 
 class DocumentForm(forms.ModelForm):
+    category = forms.ChoiceField(
+        choices=[
+            ("General", "General Document"),
+            ("10th Marksheet", "10th Marksheet"),
+            ("12th Marksheet", "12th Marksheet"),
+            ("Semester Marksheet", "Semester Marksheet"),
+            ("Degree/Certificate", "Degree/Certificate"),
+            ("Income Certificate", "Income Certificate"),
+            ("Caste Certificate", "Caste Certificate"),
+            ("Resume", "Resume"),
+        ],
+        required=False,
+    )
+
     class Meta:
         model = Document
         fields = ['name', 'category', 'file']
@@ -107,10 +121,20 @@ class UserProfileForm(forms.ModelForm):
         model = UserProfile
         fields = [
             'middle_name', 'college', 'dob', 'education', 'income',
-            'location', 'nation', 'religion', 'caste', 'interests', 'gender'
+            'location', 'nation', 'religion', 'caste', 'interests', 'gender',
+            'skills', 'class_10_percentage', 'class_12_percentage',
+            'graduation_cgpa', 'semester_marks'
         ]
         widgets = {
             'dob': forms.DateInput(attrs={'type': 'date'}),
+            'skills': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Example: Python, SQL, Django, React, Excel'
+            }),
+            'semester_marks': forms.Textarea(attrs={
+                'rows': 3,
+                'placeholder': 'Example: Sem 1: 8.1, Sem 2: 8.4, Sem 3: 8.2'
+            }),
         }
 
     def clean_interests(self):

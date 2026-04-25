@@ -98,8 +98,40 @@ class Exam(models.Model):
     date = models.DateField(blank=True, null=True)
     e_eligibility = models.CharField(max_length=20, choices=ELIGIBILITY_CHOICES,default="None")
     additional_info = models.TextField(blank=True, null=True)
+    conducting_body = models.CharField(max_length=160, blank=True)
+    registration_start_date = models.DateField(blank=True, null=True)
+    registration_end_date = models.DateField(blank=True, null=True)
+    application_fee = models.CharField(max_length=180, blank=True)
+    salary_package = models.CharField(max_length=180, blank=True)
+    required_skills = models.TextField(blank=True)
+    source_name = models.CharField(max_length=120, blank=True)
+    source_url = models.URLField(blank=True)
+    official_notification_url = models.URLField(blank=True)
+    application_url = models.URLField(blank=True)
+    is_live_source = models.BooleanField(default=False)
+    data_as_of = models.DateField(blank=True, null=True)
+    verification_notes = models.TextField(blank=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return self.name
+
+    @property
+    def effective_deadline(self):
+        return self.registration_end_date or self.date
+
+    @property
+    def registration_window(self):
+        if self.registration_start_date and self.registration_end_date:
+            return f"{self.registration_start_date} to {self.registration_end_date}"
+
+        if self.registration_end_date:
+            return f"Last date: {self.registration_end_date}"
+
+        if self.registration_start_date:
+            return f"Opens: {self.registration_start_date}"
+
+        return "Not listed"
 
 
 
@@ -149,8 +181,124 @@ class Scheme(models.Model):
     location = models.CharField(max_length=100, choices=SCHEME_LOCATION_CHOICES, default="None")
     date = models.DateField(blank=True, null=True)  # Single date field to match seed data
     additional_info = models.TextField(blank=True, null=True)
+    required_documents = models.TextField(blank=True)
+    benefit_amount = models.CharField(max_length=180, blank=True)
+    registration_start_date = models.DateField(blank=True, null=True)
+    registration_end_date = models.DateField(blank=True, null=True)
+    source_name = models.CharField(max_length=120, blank=True)
+    source_url = models.URLField(blank=True)
+    official_notification_url = models.URLField(blank=True)
+    application_url = models.URLField(blank=True)
+    is_live_source = models.BooleanField(default=False)
+    data_as_of = models.DateField(blank=True, null=True)
+    verification_notes = models.TextField(blank=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return self.name
+
+    @property
+    def effective_deadline(self):
+        return self.registration_end_date or self.date
+
+    @property
+    def registration_window(self):
+        if self.registration_start_date and self.registration_end_date:
+            return f"{self.registration_start_date} to {self.registration_end_date}"
+
+        if self.registration_end_date:
+            return f"Last date: {self.registration_end_date}"
+
+        if self.registration_start_date:
+            return f"Opens: {self.registration_start_date}"
+
+        return "Not listed"
+
+    @property
+    def benefit_summary(self):
+        return self.benefit_amount or self.benefits or "Not listed"
+
+
+# -------------------- REAL-WORLD JOB / OPPORTUNITY MODEL --------------------
+class JobOpportunity(models.Model):
+    OPPORTUNITY_TYPES = [
+        ("government_job", "Government Job"),
+        ("private_job", "Private Job"),
+        ("it_offcampus", "IT Off-Campus"),
+        ("internship", "Internship"),
+        ("apprenticeship", "Apprenticeship"),
+        ("job_fair", "Job Fair"),
+        ("career_portal", "Career Portal"),
+    ]
+    COMPENSATION_TYPES = [
+        ("not_listed", "Not Listed"),
+        ("ctc", "CTC"),
+        ("salary", "Salary"),
+        ("stipend", "Stipend"),
+        ("pay_scale", "Pay Scale"),
+        ("benefit", "Benefit"),
+    ]
+
+    title = models.CharField(max_length=255, unique=True)
+    company_or_org = models.CharField(max_length=255, blank=True)
+    opportunity_type = models.CharField(
+        max_length=40,
+        choices=OPPORTUNITY_TYPES,
+        default="private_job",
+    )
+    sector = models.CharField(max_length=120, blank=True)
+    location = models.CharField(max_length=120, blank=True, default="All India")
+    qualification = models.CharField(max_length=160, blank=True)
+    required_skills = models.TextField(blank=True)
+    min_10th_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    min_12th_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    min_cgpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    salary_or_stipend = models.CharField(max_length=160, blank=True)
+    compensation_type = models.CharField(
+        max_length=20,
+        choices=COMPENSATION_TYPES,
+        default="not_listed",
+    )
+    compensation = models.CharField(max_length=180, blank=True)
+    registration_start_date = models.DateField(blank=True, null=True)
+    registration_end_date = models.DateField(blank=True, null=True)
+    deadline = models.DateField(blank=True, null=True)
+    description = models.TextField(blank=True)
+    source_name = models.CharField(max_length=120, blank=True)
+    source_url = models.URLField(blank=True)
+    official_notification_url = models.URLField(blank=True)
+    application_url = models.URLField(blank=True)
+    is_live_source = models.BooleanField(default=True)
+    data_as_of = models.DateField(blank=True, null=True)
+    verification_notes = models.TextField(blank=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["registration_end_date", "deadline", "title"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def effective_deadline(self):
+        return self.registration_end_date or self.deadline
+
+    @property
+    def compensation_summary(self):
+        return self.compensation or self.salary_or_stipend or "Not listed"
+
+    @property
+    def registration_window(self):
+        if self.registration_start_date and self.registration_end_date:
+            return f"{self.registration_start_date} to {self.registration_end_date}"
+
+        if self.registration_end_date:
+            return f"Last date: {self.registration_end_date}"
+
+        if self.registration_start_date:
+            return f"Opens: {self.registration_start_date}"
+
+        return "Not listed"
 
 
 # -------------------- DOCUMENT MODEL --------------------
@@ -196,6 +344,11 @@ class UserProfile(models.Model):
     religion = models.CharField(max_length=50, blank=True)
     caste = models.CharField(max_length=50, blank=True)
     interests = models.TextField(blank=True)  # comma-separated
+    skills = models.TextField(blank=True)
+    class_10_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    class_12_percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    graduation_cgpa = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True)
+    semester_marks = models.TextField(blank=True)
 
     def __str__(self):
         return self.user.username

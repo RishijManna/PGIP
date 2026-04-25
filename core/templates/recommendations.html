@@ -119,6 +119,15 @@ Personalized Recommendations
 
                         </div>
 
+                        <div class="mini-ai-explanation">
+                            <strong>
+                                {{ exam.ai_explanation.verdict }} · {{ exam.ai_explanation.confidence }}%
+                            </strong>
+                            <span>
+                                {{ exam.ai_explanation.matching_factors.0 }}
+                            </span>
+                        </div>
+
                     </div>
 
                     <div class="recom-actions">
@@ -207,6 +216,15 @@ Personalized Recommendations
 
                         </div>
 
+                        <div class="mini-ai-explanation">
+                            <strong>
+                                {{ scheme.ai_explanation.verdict }} · {{ scheme.ai_explanation.confidence }}%
+                            </strong>
+                            <span>
+                                {{ scheme.ai_explanation.matching_factors.0 }}
+                            </span>
+                        </div>
+
                     </div>
 
                     <div class="recom-actions">
@@ -233,6 +251,87 @@ Personalized Recommendations
                 {% endif %}
 
             </div>
+
+        </div>
+
+    </div>
+
+    <div class="recom-card" style="margin-top: 2rem;">
+
+        <div class="card-header">
+
+            <i class="fas fa-briefcase"></i>
+
+            <h2>
+                Recommended Jobs & Off-Campus Opportunities
+            </h2>
+
+        </div>
+
+        <div class="card-body">
+
+            {% if jobs %}
+
+            {% for job in jobs %}
+
+            <div class="recommendation-item">
+
+                <div class="recom-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+
+                <div class="recom-details">
+                    <h3>{{ job.title }}</h3>
+                    <p>{{ job.company_or_org|default:job.source_name }} - {{ job.sector|default:"General" }}</p>
+
+                    <div class="ai-match">
+                        <span class="ai-reason">
+                            {{ job.compensation_summary }}
+                        </span>
+                        <span class="ai-reason">
+                            Registration: {{ job.registration_window }}
+                        </span>
+                    </div>
+
+                    <div class="ai-match">
+                        <span class="ai-score">
+                            {{ job.ai_score }}% match
+                        </span>
+
+                        {% for reason in job.ai_reasons %}
+                        <span class="ai-reason">
+                            {{ reason }}
+                        </span>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mini-ai-explanation">
+                        <strong>
+                            {{ job.ai_explanation.verdict }} - {{ job.ai_explanation.confidence }}%
+                        </strong>
+                        <span>
+                            {{ job.ai_explanation.matching_factors.0 }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="recom-actions">
+                    <a href="{% url 'details' 'job' job.id %}" class="btn-more">
+                        View Details
+                    </a>
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+            {% else %}
+
+            <p>
+                No job recommendations found. Add skills and marks in your profile, then run the real-opportunity sync.
+            </p>
+
+            {% endif %}
 
         </div>
 

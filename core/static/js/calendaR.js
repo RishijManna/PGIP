@@ -157,6 +157,27 @@ document.addEventListener('DOMContentLoaded', function () {
             if (event.extendedProps.benefits) {
                 details += `<p><strong>Benefits:</strong> ${event.extendedProps.benefits}</p>`;
             }
+            if (event.extendedProps.benefit_amount) {
+                details += `<p><strong>Benefit amount:</strong> ${event.extendedProps.benefit_amount}</p>`;
+            }
+            if (event.extendedProps.application_fee) {
+                details += `<p><strong>Registration fee:</strong> ${event.extendedProps.application_fee}</p>`;
+            }
+            if (event.extendedProps.salary_package) {
+                details += `<p><strong>Salary / package:</strong> ${event.extendedProps.salary_package}</p>`;
+            }
+            if (event.extendedProps.required_documents) {
+                details += `<p><strong>Required documents:</strong> ${event.extendedProps.required_documents}</p>`;
+            }
+            if (event.extendedProps.compensation) {
+                details += `<p><strong>Compensation:</strong> ${event.extendedProps.compensation}</p>`;
+            }
+            if (event.extendedProps.registration_window) {
+                details += `<p><strong>Registration:</strong> ${event.extendedProps.registration_window}</p>`;
+            }
+            if (event.extendedProps.source_name) {
+                details += `<p><strong>Source:</strong> ${event.extendedProps.source_name}</p>`;
+            }
         }
         
         details += `<p><strong>Date:</strong> ${event.startStr}</p>`;
@@ -185,6 +206,8 @@ document.addEventListener('DOMContentLoaded', function () {
                             event.className = 'exam-event';
                         } else if (event.id && event.id.startsWith('scheme-')) {
                             event.className = 'scheme-event';
+                        } else if (event.id && event.id.startsWith('job-')) {
+                            event.className = 'job-event';
                         }
                     });
                     successCallback(defaultEvents);

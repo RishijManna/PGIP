@@ -7,12 +7,34 @@ Dashboard
 
 {% block content %}
 
+<section class="dashboard-hero">
+    <div>
+        <span class="eyebrow">
+            <i class="fas fa-compass"></i>
+            Personalized public-service dashboard
+        </span>
+        <h1>Find exams and schemes that actually fit your profile</h1>
+        <p>Search, filter, save deadlines, and use PGIP AI to understand eligibility before you apply.</p>
+    </div>
+
+    <div class="hero-actions">
+        <a href="{% url 'ai_assistant' %}" class="btn-details">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            Ask PGIP AI
+        </a>
+        <a href="{% url 'recommendations' %}" class="btn-outline hero-outline">
+            <i class="fas fa-lightbulb"></i>
+            View Matches
+        </a>
+    </div>
+</section>
+
 <!-- Search Bar -->
 <div class="search-bar">
     <div class="search-container">
         <i class="fas fa-search search-icon"></i>
         <form method="get" action="{% url 'search_results' %}" style="display: flex; width: 100%;">
-            <input type="text" name="q" placeholder="Search exams or schemes..." value="{{ query|default:'' }}">
+            <input type="text" name="q" placeholder="Search exams, schemes, jobs, skills..." value="{{ query|default:'' }}">
             <button type="submit" class="search-btn">
                 <i class="fas fa-search"></i> Search
             </button>
@@ -431,6 +453,19 @@ Dashboard
                         {% if exam.e_eligibility %}
                         <span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>
                         {% endif %}
+                        {% if exam.application_fee %}
+                        <span class="tag tag-mode">
+                            <i class="fas fa-receipt"></i> {{ exam.application_fee|truncatechars:42 }}
+                        </span>
+                        {% endif %}
+                        {% if exam.salary_package %}
+                        <span class="tag tag-eligibility">
+                            <i class="fas fa-indian-rupee-sign"></i> {{ exam.salary_package|truncatechars:42 }}
+                        </span>
+                        {% endif %}
+                        {% if exam.required_skills %}
+                        <span class="tag tag-category">{{ exam.required_skills|truncatechars:45 }}</span>
+                        {% endif %}
                     </div>
                     
                     <div class="card-footer">
@@ -487,6 +522,14 @@ Dashboard
                         {% if scheme.s_eligibility %}
                         <span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>
                         {% endif %}
+                        {% if scheme.benefit_amount %}
+                        <span class="tag tag-mode">
+                            <i class="fas fa-indian-rupee-sign"></i> {{ scheme.benefit_amount|truncatechars:42 }}
+                        </span>
+                        {% endif %}
+                        {% if scheme.required_documents %}
+                        <span class="tag tag-category">{{ scheme.required_documents|truncatechars:45 }}</span>
+                        {% endif %}
                     </div>
                     
                     <div class="card-footer">
@@ -510,6 +553,79 @@ Dashboard
                 <i class="fas fa-file-alt"></i>
                 <h3>No Government Schemes</h3>
                 <p>There are no schemes matching your criteria at this time.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Real-World Jobs Section -->
+        <h2 class="section-title" style="margin-top: 3rem;">
+            <i class="fas fa-briefcase"></i> Jobs & Off-Campus Opportunities
+            <span class="title-underline"></span>
+        </h2>
+
+        <div id="jobsContainer">
+            {% if jobs %}
+            <div class="card-grid">
+                {% for job in jobs %}
+                <div class="card card-animate">
+                    <div class="card-header">
+                        <h3>{{ job.title }}</h3>
+                        <div class="card-date">
+                            {% if job.effective_deadline %}
+                            <i class="far fa-calendar"></i> {{ job.effective_deadline|date:"F d, Y"|default:"Last date not listed" }}
+                            {% else %}
+                            <i class="far fa-calendar"></i> Deadline varies by listing
+                            {% endif %}
+                        </div>
+                        <div class="card-type">
+                            <i class="fas fa-building"></i> {{ job.company_or_org|default:job.source_name }}
+                        </div>
+                    </div>
+
+                    <div class="card-tags">
+                        <span class="tag tag-primary">{{ job.get_opportunity_type_display }}</span>
+                        <span class="tag tag-category">{{ job.sector|default:"General" }}</span>
+                        <span class="tag tag-location">
+                            <i class="fas fa-map-pin"></i> {{ job.location|default:"All India" }}
+                        </span>
+                        <span class="tag tag-mode">
+                            <i class="fas fa-wallet"></i> {{ job.compensation_summary|truncatechars:42 }}
+                        </span>
+                        <span class="tag tag-eligibility">
+                            <i class="fas fa-clock"></i> {{ job.registration_window }}
+                        </span>
+                        {% if job.required_skills %}
+                        <span class="tag tag-eligibility">{{ job.required_skills|truncatechars:40 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-footer">
+                        <a href="{% url 'details' 'job' job.id %}" class="btn-details">
+                            <i class="fas fa-info-circle"></i> View Details
+                        </a>
+                        {% if job.effective_deadline %}
+                        <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_type" value="job">
+                            <input type="hidden" name="item_id" value="{{ job.id }}">
+                            <button type="submit" class="btn-calendar">
+                                <i class="far fa-calendar-plus"></i> Add to Calendar
+                            </button>
+                        </form>
+                        {% elif job.source_url %}
+                        <a href="{{ job.source_url }}" target="_blank" rel="noopener" class="btn-calendar">
+                            <i class="fas fa-arrow-up-right-from-square"></i> Open Source
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-data-message">
+                <i class="fas fa-briefcase"></i>
+                <h3>No Jobs Imported Yet</h3>
+                <p>Run the real-opportunity sync command to add live source opportunities.</p>
             </div>
             {% endif %}
         </div>
@@ -608,6 +724,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const newSchemes = doc.getElementById('schemesContainer');
                 if (newSchemes) {
                     document.getElementById('schemesContainer').innerHTML = newSchemes.innerHTML;
+                }
+
+                const newJobs = doc.getElementById('jobsContainer');
+                if (newJobs && document.getElementById('jobsContainer')) {
+                    document.getElementById('jobsContainer').innerHTML = newJobs.innerHTML;
                 }
                 
                 // Update URL without page reload

@@ -5,14 +5,16 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.http import JsonResponse
+from django.db.models import F
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from datetime import datetime
 from calendar import monthrange
 import random
 import json
 from .forms import UserForm, UserProfileForm
 from .models import UserProfile
-from .models import OTP, Task, Exam, Scheme, Document
+from .models import OTP, Task, Exam, Scheme, Document, JobOpportunity
 from .forms import EmailForm, OTPForm, TaskForm, DocumentForm
 from django.contrib import messages
 
@@ -35,6 +37,7 @@ def create_calendar_reminder(user, title, date):
 def dashboard(request):
     schemes = Scheme.objects.all()
     exams = Exam.objects.all()
+    jobs = JobOpportunity.objects.all()
 
     # Get filters from request
     exam_types = request.GET.getlist('exam_type')
@@ -68,23 +71,41 @@ def dashboard(request):
     if s_eligibilities:
         schemes = schemes.filter(s_eligibility__in=s_eligibilities)
 
+    if locations:
+        jobs = jobs.filter(location__in=locations)
+    if categories:
+        jobs = jobs.filter(sector__in=categories)
+
     # Apply sorting
     if sort == 'date':
         exams = exams.order_by('date')
         schemes = schemes.order_by('date')
+        jobs = jobs.order_by(
+            F('registration_end_date').asc(nulls_last=True),
+            F('deadline').asc(nulls_last=True),
+            'title',
+        )
     elif sort == '-date':
         exams = exams.order_by('-date')
         schemes = schemes.order_by('-date')
+        jobs = jobs.order_by(
+            F('registration_end_date').desc(nulls_last=True),
+            F('deadline').desc(nulls_last=True),
+            'title',
+        )
     elif sort == 'name':
         exams = exams.order_by('name')
         schemes = schemes.order_by('name')
+        jobs = jobs.order_by('title')
     elif sort == '-name':
         exams = exams.order_by('-name')
         schemes = schemes.order_by('-name')
+        jobs = jobs.order_by('-title')
 
     context = {
         'schemes': schemes,
         'exams': exams,
+        'jobs': jobs,
     }
     
     # Check if it's an AJAX request
@@ -98,6 +119,7 @@ def search_results(request):
     query = request.GET.get('q', '')
     exams = Exam.objects.none()
     schemes = Scheme.objects.none()
+    jobs = JobOpportunity.objects.none()
 
     if query:
         exams = Exam.objects.filter(
@@ -106,6 +128,12 @@ def search_results(request):
             category__icontains=query
         ) | Exam.objects.filter(
             location__icontains=query
+        ) | Exam.objects.filter(
+            conducting_body__icontains=query
+        ) | Exam.objects.filter(
+            required_skills__icontains=query
+        ) | Exam.objects.filter(
+            salary_package__icontains=query
         )
 
         schemes = Scheme.objects.filter(
@@ -114,12 +142,31 @@ def search_results(request):
             category__icontains=query
         ) | Scheme.objects.filter(
             location__icontains=query
+        ) | Scheme.objects.filter(
+            benefits__icontains=query
+        ) | Scheme.objects.filter(
+            benefit_amount__icontains=query
+        ) | Scheme.objects.filter(
+            required_documents__icontains=query
+        )
+
+        jobs = JobOpportunity.objects.filter(
+            title__icontains=query
+        ) | JobOpportunity.objects.filter(
+            company_or_org__icontains=query
+        ) | JobOpportunity.objects.filter(
+            sector__icontains=query
+        ) | JobOpportunity.objects.filter(
+            required_skills__icontains=query
+        ) | JobOpportunity.objects.filter(
+            location__icontains=query
         )
 
     context = {
         'query': query,
         'exams': exams.distinct(),
-        'schemes': schemes.distinct()
+        'schemes': schemes.distinct(),
+        'jobs': jobs.distinct()
     }
     return render(request, 'search_results.html', context)
 
@@ -256,6 +303,8 @@ def logout_view(request):
 def api_events(request):
     tasks = Task.objects.filter(user=request.user)
     exams = Exam.objects.all()
+    schemes = Scheme.objects.all()
+    jobs = JobOpportunity.objects.all()
 
     events = []
 
@@ -272,6 +321,9 @@ def api_events(request):
 
     # Exams
     for e in exams:
+        if not e.date:
+            continue
+
         events.append({
             "id": f"exam-{e.id}",
             "title": f"📚 {e.name}",
@@ -280,6 +332,58 @@ def api_events(request):
             "color": "#FF6B6B",  # Red exams
             "url": f"/exam/{e.id}/",
             "type": "exam",
+            "category": e.category,
+            "location": e.location,
+            "mode": e.mode,
+            "e_eligibility": e.e_eligibility,
+            "conducting_body": e.conducting_body,
+            "application_fee": e.application_fee,
+            "salary_package": e.salary_package,
+            "registration_window": e.registration_window,
+        })
+
+    for scheme in schemes:
+        if not scheme.date:
+            continue
+
+        events.append({
+            "id": f"scheme-{scheme.id}",
+            "title": f"Scheme: {scheme.name}",
+            "start": scheme.date.strftime("%Y-%m-%d"),
+            "allDay": True,
+            "color": "#2FB344",
+            "url": f"/details/scheme/{scheme.id}/",
+            "type": "scheme",
+            "category": scheme.category,
+            "location": scheme.location,
+            "s_eligibility": scheme.s_eligibility,
+            "description": scheme.description,
+            "benefits": scheme.benefits,
+            "benefit_amount": scheme.benefit_amount,
+            "required_documents": scheme.required_documents,
+            "registration_window": scheme.registration_window,
+        })
+
+    for job in jobs:
+        item_date = job.effective_deadline
+
+        if not item_date:
+            continue
+
+        events.append({
+            "id": f"job-{job.id}",
+            "title": f"Opportunity: {job.title}",
+            "start": item_date.strftime("%Y-%m-%d"),
+            "allDay": True,
+            "color": "#7C3AED",
+            "url": f"/details/job/{job.id}/",
+            "type": "job",
+            "category": job.sector,
+            "location": job.location,
+            "description": job.description,
+            "compensation": job.compensation_summary,
+            "registration_window": job.registration_window,
+            "source_name": job.source_name,
         })
 
     return JsonResponse(events, safe=False)
@@ -418,15 +522,28 @@ def add_to_calendar(request):
         if item_type == 'exam':
             item = get_object_or_404(Exam, id=item_id)
             title = f"Exam: {item.name}"
+            item_date = item.date
+            item_name = item.name
+        elif item_type == 'job':
+            item = get_object_or_404(JobOpportunity, id=item_id)
+            title = f"Job: {item.title}"
+            item_date = item.effective_deadline
+            item_name = item.title
         else:  # scheme
             item = get_object_or_404(Scheme, id=item_id)
             title = f"Scheme: {item.name}"
+            item_date = item.date
+            item_name = item.name
         
-        created = create_calendar_reminder(request.user, title, item.date)
+        if not item_date:
+            messages.info(request, f"{item_name} has no listed date yet.")
+            return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
+        created = create_calendar_reminder(request.user, title, item_date)
         if created:
-            messages.success(request, f"Added {item.name} to your calendar!")
+            messages.success(request, f"Added {item_name} to your calendar!")
         else:
-            messages.info(request, f"{item.name} is already in your calendar!")
+            messages.info(request, f"{item_name} is already in your calendar!")
     
     # Redirect back to the previous page
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
@@ -470,14 +587,13 @@ def profile_view(request):
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
-from .models import UserProfile
-from .models import Exam
-from .models import Scheme
-
 from .services.ai_recommendation import (
+    build_eligibility_explanation,
     recommend_exams,
+    recommend_jobs,
     recommend_schemes,
 )
+from .services.ai_assistant import answer_question
 
 
 @login_required
@@ -490,6 +606,7 @@ def recommendations_view(request):
     all_exams = Exam.objects.all()
 
     all_schemes = Scheme.objects.all()
+    all_jobs = JobOpportunity.objects.all()
 
     recommended_exams = recommend_exams(
         profile,
@@ -500,6 +617,31 @@ def recommendations_view(request):
         profile,
         all_schemes
     )
+    recommended_jobs = recommend_jobs(
+        profile,
+        all_jobs
+    )
+
+    for exam in recommended_exams:
+        exam.ai_explanation = build_eligibility_explanation(
+            profile,
+            exam,
+            "exam"
+        )
+
+    for scheme in recommended_schemes:
+        scheme.ai_explanation = build_eligibility_explanation(
+            profile,
+            scheme,
+            "scheme"
+        )
+
+    for job in recommended_jobs:
+        job.ai_explanation = build_eligibility_explanation(
+            profile,
+            job,
+            "job"
+        )
 
     interests = []
 
@@ -514,6 +656,7 @@ def recommendations_view(request):
     context = {
         "exams": recommended_exams,
         "schemes": recommended_schemes,
+        "jobs": recommended_jobs,
         "interests": interests,
         "user_location": profile.location,
     }
@@ -524,11 +667,84 @@ def recommendations_view(request):
         context
     )
 
+
+@login_required
+def ai_assistant_view(request):
+    profile, _ = UserProfile.objects.get_or_create(
+        user=request.user
+    )
+
+    recommended_exams = recommend_exams(
+        profile,
+        Exam.objects.all()
+    )[:3]
+    recommended_schemes = recommend_schemes(
+        profile,
+        Scheme.objects.all()
+    )[:3]
+    recommended_jobs = recommend_jobs(
+        profile,
+        JobOpportunity.objects.all()
+    )[:3]
+
+    return render(
+        request,
+        "ai_assistant.html",
+        {
+            "recommended_exams": recommended_exams,
+            "recommended_schemes": recommended_schemes,
+            "recommended_jobs": recommended_jobs,
+            "profile": profile,
+        }
+    )
+
+
+@login_required
+@require_POST
+def ai_assistant_api(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": "Invalid JSON payload."},
+            status=400
+        )
+
+    question = payload.get("message", "")
+    history = payload.get("history", [])
+    profile, _ = UserProfile.objects.get_or_create(
+        user=request.user
+    )
+    result = answer_question(
+        profile,
+        question,
+        Exam.objects.all(),
+        Scheme.objects.all(),
+        JobOpportunity.objects.all(),
+        history
+    )
+
+    return JsonResponse(result)
+
 def details_view(request, item_type, item_id):
     if item_type == 'exam':
         item = get_object_or_404(Exam, id=item_id)
+        display_name = item.name
+        display_type = item.exam_type
+        display_date = item.date
+        display_eligibility = item.e_eligibility
     elif item_type == 'scheme':
         item = get_object_or_404(Scheme, id=item_id)
+        display_name = item.name
+        display_type = item.scheme_type
+        display_date = item.date
+        display_eligibility = item.s_eligibility
+    elif item_type == 'job':
+        item = get_object_or_404(JobOpportunity, id=item_id)
+        display_name = item.title
+        display_type = item.get_opportunity_type_display()
+        display_date = item.effective_deadline
+        display_eligibility = item.qualification
     else:
         # Handle invalid item_type
         return render(request, "error.html", {"message": "Invalid item type"})
@@ -537,5 +753,16 @@ def details_view(request, item_type, item_id):
         "item_type": item_type,
         "item": item,  # Pass the actual object
         "item_id": item_id,
+        "display_name": display_name,
+        "display_type": display_type,
+        "display_date": display_date,
+        "display_eligibility": display_eligibility,
+        "ai_explanation": build_eligibility_explanation(
+            UserProfile.objects.get_or_create(user=request.user)[0]
+            if request.user.is_authenticated
+            else UserProfile(),
+            item,
+            item_type
+        ),
     }
     return render(request, "details.html", context)

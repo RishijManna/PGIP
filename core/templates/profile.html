@@ -20,6 +20,23 @@ My Profile
         My Profile
     </h2>
 
+    <div class="profile-ai-banner">
+        <div>
+            <span class="eyebrow">
+                <i class="fas fa-user-shield"></i>
+                AI-ready profile
+            </span>
+            <p>
+                Complete education, income, location, caste, gender, and interests to improve eligibility explanations and chatbot answers.
+            </p>
+        </div>
+
+        <a href="{% url 'ai_assistant' %}" class="btn-details">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            Ask AI with my profile
+        </a>
+    </div>
+
     <!-- Profile Update Form -->
 
     <form method="POST"
@@ -76,6 +93,11 @@ My Profile
             {{ profile_form.education }}
         </div>
 
+        <div class="form-group full-width">
+            <label>Skills:</label>
+            {{ profile_form.skills }}
+        </div>
+
         <!-- Row 3 -->
 
         <div class="form-group">
@@ -98,11 +120,31 @@ My Profile
             {{ profile_form.religion }}
         </div>
 
+        <div class="form-group">
+            <label>10th Percentage:</label>
+            {{ profile_form.class_10_percentage }}
+        </div>
+
+        <div class="form-group">
+            <label>12th Percentage:</label>
+            {{ profile_form.class_12_percentage }}
+        </div>
+
+        <div class="form-group">
+            <label>Graduation CGPA:</label>
+            {{ profile_form.graduation_cgpa }}
+        </div>
+
         <!-- Row 4 -->
 
         <div class="form-group">
             <label>Caste:</label>
             {{ profile_form.caste }}
+        </div>
+
+        <div class="form-group full-width">
+            <label>Semester-wise Marks / SGPA:</label>
+            {{ profile_form.semester_marks }}
         </div>
 
         <!-- Interests -->
@@ -180,6 +222,8 @@ My Profile
                    name="name"
                    placeholder="Document Name"
                    required>
+
+            {{ doc_form.category }}
 
             <input type="file"
                    name="file"

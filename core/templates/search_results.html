@@ -12,7 +12,7 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
     <div class="search-container">
         <i class="fas fa-search search-icon"></i>
         <form method="get" action="{% url 'search_results' %}" style="display: flex; width: 100%;">
-            <input type="text" name="q" placeholder="Search exams or schemes..." value="{{ query|default:'' }}">
+            <input type="text" name="q" placeholder="Search exams, schemes, jobs, skills..." value="{{ query|default:'' }}">
             <button type="submit" class="search-btn">
                 <i class="fas fa-search"></i> Search
             </button>
@@ -36,6 +36,10 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
             <span class="stat-schemes">
                 <i class="fas fa-landmark"></i>
                 <strong>{{ schemes|length }}</strong> Schemes found
+            </span>
+            <span class="stat-jobs">
+                <i class="fas fa-briefcase"></i>
+                <strong>{{ jobs|length }}</strong> Jobs found
             </span>
         </div>
     </div>
@@ -72,6 +76,16 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
                     {% if exam.e_eligibility %}
                     <span class="tag tag-eligibility">{{ exam.e_eligibility }}</span>
                     {% endif %}
+                    {% if exam.application_fee %}
+                    <span class="tag tag-mode">
+                        <i class="fas fa-receipt"></i> {{ exam.application_fee|truncatechars:42 }}
+                    </span>
+                    {% endif %}
+                    {% if exam.salary_package %}
+                    <span class="tag tag-eligibility">
+                        <i class="fas fa-indian-rupee-sign"></i> {{ exam.salary_package|truncatechars:42 }}
+                    </span>
+                    {% endif %}
                 </div>
                 
                 <div class="card-footer">
@@ -95,6 +109,79 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
             <i class="fas fa-calendar-times"></i>
             <h3>No Exams Found</h3>
             <p>We couldn't find any exams matching "{{ query }}". Try a different search term.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Jobs Section -->
+    <section class="results-section">
+        <h2 class="section-title">
+            <i class="fas fa-briefcase"></i> Jobs & Off-Campus Opportunities
+            <span class="title-underline"></span>
+        </h2>
+
+        {% if jobs %}
+        <div class="card-grid">
+            {% for job in jobs %}
+            <div class="card card-animate">
+                <div class="card-header">
+                    <h3>{{ job.title }}</h3>
+                    <div class="card-date">
+                        {% if job.effective_deadline %}
+                        <i class="far fa-calendar"></i> {{ job.effective_deadline|date:"F d, Y"|default:"Last date not listed" }}
+                        {% else %}
+                        <i class="far fa-calendar"></i> Deadline varies by listing
+                        {% endif %}
+                    </div>
+                    <div class="card-type">
+                        <i class="fas fa-building"></i> {{ job.company_or_org|default:job.source_name }}
+                    </div>
+                </div>
+
+                <div class="card-tags">
+                    <span class="tag tag-primary">{{ job.get_opportunity_type_display }}</span>
+                    <span class="tag tag-category">{{ job.sector|default:"General" }}</span>
+                    <span class="tag tag-location">
+                        <i class="fas fa-map-pin"></i> {{ job.location|default:"All India" }}
+                    </span>
+                    <span class="tag tag-mode">
+                        <i class="fas fa-wallet"></i> {{ job.compensation_summary|truncatechars:42 }}
+                    </span>
+                    <span class="tag tag-eligibility">
+                        <i class="fas fa-clock"></i> {{ job.registration_window }}
+                    </span>
+                    {% if job.required_skills %}
+                    <span class="tag tag-eligibility">{{ job.required_skills|truncatechars:40 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer">
+                    <a href="{% url 'details' 'job' job.id %}" class="btn-details">
+                        <i class="fas fa-info-circle"></i> View Details
+                    </a>
+                    {% if job.effective_deadline %}
+                    <form method="post" action="{% url 'add_to_calendar' %}" class="calendar-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="item_type" value="job">
+                        <input type="hidden" name="item_id" value="{{ job.id }}">
+                        <button type="submit" class="btn-calendar">
+                            <i class="far fa-calendar-plus"></i> Add to Calendar
+                        </button>
+                    </form>
+                    {% elif job.source_url %}
+                    <a href="{{ job.source_url }}" target="_blank" rel="noopener" class="btn-calendar">
+                        <i class="fas fa-arrow-up-right-from-square"></i> Open Source
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-data-message">
+            <i class="fas fa-briefcase"></i>
+            <h3>No Jobs Found</h3>
+            <p>We couldn't find any jobs matching "{{ query }}". Try a different search term.</p>
         </div>
         {% endif %}
     </section>
@@ -127,6 +214,11 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
                     </span>
                     {% if scheme.s_eligibility %}
                     <span class="tag tag-eligibility">{{ scheme.s_eligibility }}</span>
+                    {% endif %}
+                    {% if scheme.benefit_amount %}
+                    <span class="tag tag-mode">
+                        <i class="fas fa-indian-rupee-sign"></i> {{ scheme.benefit_amount|truncatechars:42 }}
+                    </span>
                     {% endif %}
                 </div>
                 

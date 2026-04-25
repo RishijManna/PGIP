@@ -5,6 +5,8 @@
 {% block title %}
 {% if item_type == 'exam' %}
 Exam Details
+{% elif item_type == 'job' %}
+Opportunity Details
 {% else %}
 Scheme Details
 {% endif %}
@@ -25,24 +27,24 @@ Scheme Details
         <div class="detail-header">
 
             <h1>
-                {{ item.name }}
+                {{ display_name }}
             </h1>
 
             <div class="detail-meta">
 
                 <div class="meta-item">
                     <i class="fas fa-tag"></i>
-                    {{ item.category }}
+                    {% if item_type == 'job' %}
+                        {{ item.sector }}
+                    {% else %}
+                        {{ item.category }}
+                    {% endif %}
                 </div>
 
                 <div class="meta-item">
                     <i class="fas fa-building"></i>
 
-                    {% if item_type == 'exam' %}
-                        {{ item.exam_type }}
-                    {% else %}
-                        {{ item.scheme_type }}
-                    {% endif %}
+                    {{ display_type }}
 
                 </div>
 
@@ -53,7 +55,7 @@ Scheme Details
 
                 <div class="meta-item">
                     <i class="fas fa-calendar-alt"></i>
-                    Date: {{ item.date }}
+                    Date: {{ display_date|default:"Not listed" }}
                 </div>
 
             </div>
@@ -75,15 +77,154 @@ Scheme Details
                         {{ item.description }}
                     </p>
 
+                    <p>
+                        <strong>Benefits:</strong>
+                        {{ item.benefit_summary }}
+                    </p>
+
+                    <p>
+                        <strong>Required documents:</strong>
+                        {{ item.required_documents|default:"Verify from official scheme page" }}
+                    </p>
+
+                    <p>
+                        <strong>Application Window:</strong>
+                        {{ item.registration_window }}
+                    </p>
+
+                {% elif item_type == 'job' %}
+
+                    <p>
+                        {{ item.description|default:"This opportunity was imported from a real-world source or career portal." }}
+                    </p>
+
+                    <p>
+                        <strong>Organization:</strong>
+                        {{ item.company_or_org|default:"Not listed" }}
+                    </p>
+
+                    <p>
+                        <strong>Required skills:</strong>
+                        {{ item.required_skills|default:"Not listed" }}
+                    </p>
+
+                    <p>
+                        <strong>Compensation:</strong>
+                        {{ item.compensation_summary }}
+                    </p>
+
+                    <p>
+                        <strong>Registration Window:</strong>
+                        {{ item.registration_window }}
+                    </p>
+
+                    {% if item.registration_start_date %}
+                    <p>
+                        <strong>Registration Start:</strong>
+                        {{ item.registration_start_date|date:"F d, Y" }}
+                    </p>
+                    {% endif %}
+
+                    {% if item.effective_deadline %}
+                    <p>
+                        <strong>Last Date:</strong>
+                        {{ item.effective_deadline|date:"F d, Y" }}
+                    </p>
+                    {% endif %}
+
+                    {% if item.data_as_of %}
+                    <p>
+                        <strong>Data As Of:</strong>
+                        {{ item.data_as_of|date:"F d, Y" }}
+                    </p>
+                    {% endif %}
+
+                    {% if item.verification_notes %}
+                    <p>
+                        <strong>Verification:</strong>
+                        {{ item.verification_notes }}
+                    </p>
+                    {% endif %}
+
                 {% else %}
 
                     <p>
-                        {{ item.name }} is a
-                        {{ item.exam_type }}
+                        {{ display_name }} is a
+                        {{ display_type }}
                         exam.
                     </p>
 
+                    <p>
+                        <strong>Conducting body:</strong>
+                        {{ item.conducting_body|default:"Not listed" }}
+                    </p>
+
+                    <p>
+                        <strong>Registration window:</strong>
+                        {{ item.registration_window }}
+                    </p>
+
+                    <p>
+                        <strong>Registration fee:</strong>
+                        {{ item.application_fee|default:"Verify from official notification" }}
+                    </p>
+
+                    <p>
+                        <strong>Salary / package:</strong>
+                        {{ item.salary_package|default:"Varies by post; verify official notification" }}
+                    </p>
+
+                    <p>
+                        <strong>Skills / subjects required:</strong>
+                        {{ item.required_skills|default:"Verify syllabus and notification" }}
+                    </p>
+
                 {% endif %}
+
+            </div>
+
+
+            <div class="detail-section ai-explain-section">
+
+                <div class="ai-section-heading">
+                    <span>
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        AI Eligibility Explanation
+                    </span>
+                    <strong>{{ ai_explanation.confidence }}% · {{ ai_explanation.verdict }}</strong>
+                </div>
+
+                <p>
+                    {{ ai_explanation.summary }}
+                </p>
+
+                <div class="ai-explain-grid">
+                    <div>
+                        <h4>Why it matches</h4>
+                        <ul>
+                            {% for reason in ai_explanation.matching_factors %}
+                            <li>{{ reason }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4>Check before applying</h4>
+                        <ul>
+                            {% for concern in ai_explanation.concerns %}
+                            <li>{{ concern }}</li>
+                            {% empty %}
+                            <li>No major concern found from the available profile data.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="document-chips">
+                    {% for document in ai_explanation.suggested_documents %}
+                    <span>{{ document }}</span>
+                    {% endfor %}
+                </div>
 
             </div>
 
@@ -96,11 +237,7 @@ Scheme Details
 
                 <p>
 
-                    {% if item_type == 'exam' %}
-                        {{ item.e_eligibility }}
-                    {% else %}
-                        {{ item.s_eligibility }}
-                    {% endif %}
+                    {{ display_eligibility|default:"Not listed" }}
 
                 </p>
 
@@ -110,11 +247,15 @@ Scheme Details
             <div class="detail-section">
 
                 <h3>
+                    {% if item_type == 'job' %}
+                    Last Date / Registration Deadline
+                    {% else %}
                     Application Deadline
+                    {% endif %}
                 </h3>
 
                 <p>
-                    {{ item.date }}
+                    {{ display_date|default:"Not listed" }}
                 </p>
 
             </div>
@@ -128,13 +269,45 @@ Scheme Details
 
                 <div class="action-buttons">
 
+                    {% if item.source_url %}
+                    <a href="{{ item.source_url }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="btn btn-primary">
+
+                        Open Source
+
+                    </a>
+                    {% if item.application_url %}
+                    <a href="{{ item.application_url }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="btn btn-secondary">
+
+                        Apply / Register
+
+                    </a>
+                    {% endif %}
+                    {% if item.official_notification_url %}
+                    <a href="{{ item.official_notification_url }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="btn btn-secondary">
+
+                        Official Notification
+
+                    </a>
+                    {% endif %}
+                    {% else %}
                     <a href="#"
                        class="btn btn-primary">
 
                         Apply Now
 
                     </a>
+                    {% endif %}
 
+                    {% if display_date %}
                     <form method="post"
                           action="{% url 'add_to_calendar' %}"
                           style="display:inline;">
@@ -157,6 +330,7 @@ Scheme Details
                         </button>
 
                     </form>
+                    {% endif %}
 
                     <button onclick="goBack()"
                             class="btn btn-secondary">
