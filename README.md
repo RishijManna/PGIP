@@ -1,78 +1,133 @@
-Government_PGIP_Portal
+# Government PGIP Portal
 
-Personalized Government Information Portal (PGIP)
+Personalized Government Information Portal (PGIP) is a Django web application that helps users discover relevant government schemes, competitive exams, jobs, internships, and apprenticeships from one place. It combines profile-based filtering, deadline tracking, and an AI-powered assistant to make public information easier to act on.
 
-In today's digital landscape, individuals often face challenges in keeping track of government schemes, competitive exams, job openings, internships, apprenticeships, and tax-related updates because information is scattered across many sources. PGIP solves this by providing a centralized, smart web application that delivers tailored public-service and career information based on each user's profile.
+Live app: [https://rishijmanna.pythonanywhere.com/](https://rishijmanna.pythonanywhere.com/)
 
-Users can create accounts and provide details such as age, gender, education, employment type, income status, domicile state, skills, 10th/12th marks, graduation CGPA, semester marks, and academic documents. The system uses this data to filter and recommend schemes, exam notifications, jobs, internships, apprenticeships, and other opportunities aligned with eligibility and interests.
+## Features
 
-The platform includes:
+- OTP-based login using email
+- User profile with education, income, location, caste, interests, skills, marks, and academic details
+- Personalized recommendations for exams, schemes, and job opportunities
+- AI eligibility explanations with matching factors, concerns, and suggested documents
+- AI assistant for questions about schemes, exams, jobs, internships, apprenticeships, and offer decisions
+- Search across exams, schemes, and opportunities
+- Calendar reminders for exams, schemes, jobs, and personal tasks
+- Document upload support for user records
+- Source-backed records for opportunities, schemes, and exams
+- Optional OpenAI integration with local semantic fallback when no API key is configured
 
-- Personalized alerts and deadline reminders
-- Eligibility-based scheme, exam, and job recommendations
-- Document checklists for applications
-- Source-backed real-world opportunity records
-- Compensation, stipend, CTC, registration start date, and last-date fields for jobs and internships
-- Streamlined updates on government services
+## Tech Stack
 
-LINK -> [https://rishijmanna.pythonanywhere.com/]
+- Python
+- Django 5
+- SQLite by default
+- PostgreSQL supported through `DATABASE_URL`
+- WhiteNoise for static files
+- Gunicorn for deployment
+- scikit-learn for local recommendation and semantic matching
 
-## GenAI Upgrade
+## Project Structure
 
-PGIP now includes a RAG-style AI assistant for schemes, exams, jobs, internships, apprenticeships, and offer decisions:
+```text
+PGIP_SQL/
+|-- manage.py
+|-- requirements.txt
+|-- Procfile
+|-- my_project/              # Django project settings and URLs
+|-- my_app/                  # Main application logic, models, views, services
+|-- core/
+|   |-- templates/           # HTML templates
+|   |-- static/              # Project static assets
+|-- documents/               # Sample uploaded documents
+|-- media/                   # User-uploaded media
+|-- staticfiles/             # Collected static files
+|-- db.sqlite3               # Local development database
+```
 
-- Natural-language chatbot over portal exams, schemes, jobs, and career records
-- Profile-aware retrieval using education, income, location, interests, gender, caste, skills, and marks
-- Skill and marks-aware matching using skills, 10th marks, 12th marks, CGPA, and semester marks
-- AI eligibility explanations with confidence, matching factors, concerns, and suggested documents
-- Exam preparation roadmaps when a student asks what to study for a particular exam
-- Scheme guidance for scholarships, financial aid, training, and welfare support
-- Job/off-campus guidance with compensation and registration deadline context
-- Company offer comparison guidance for students choosing between multiple job offers
-- Optional OpenAI-backed generation when `OPENAI_API_KEY` is configured
-- Local semantic RAG fallback when no API key is available, so the demo still works offline
+## Main Modules
 
-Real-world opportunity sync:
+- `my_app/models.py`: exams, schemes, opportunities, OTPs, reminders, documents, and user profile models
+- `my_app/views.py`: dashboard, login flow, recommendations, AI assistant, profile, search, and calendar views
+- `my_app/services/ai_recommendation.py`: profile-aware ranking and eligibility reasoning
+- `my_app/services/ai_assistant.py`: grounded assistant with OpenAI-backed or local semantic responses
+- `my_app/management/commands/seed_data.py`: seeds sample exam and scheme data
+- `my_app/management/commands/sync_real_opportunities.py`: imports source-backed records and optional JSON feeds
+
+## Setup
+
+1. Create and activate a virtual environment.
+2. Install dependencies.
+3. Add environment variables in a `.env` file.
+4. Run migrations.
+5. Load initial data.
+6. Start the server.
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_data
+python manage.py sync_real_opportunities
+python manage.py runserver
+```
+
+Open `http://127.0.0.1:8000/` in your browser.
+
+## Environment Variables
+
+Create a `.env` file in the project root.
+
+```env
+DJANGO_SECRET_KEY=your-secret-key
+DEBUG=True
+EMAIL_HOST_USER=your-email@example.com
+EMAIL_HOST_PASSWORD=your-app-password
+DATABASE_URL=sqlite:///db.sqlite3
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_API_BASE=https://api.openai.com/v1
+OPENAI_TIMEOUT=20
+REAL_EXAM_FEEDS=
+REAL_SCHEME_FEEDS=
+REAL_OPPORTUNITY_FEEDS=
+```
+
+Notes:
+
+- `EMAIL_HOST_USER` and `EMAIL_HOST_PASSWORD` are required for OTP login by email.
+- If `OPENAI_API_KEY` is not set, the AI assistant still works using local semantic matching.
+- `DATABASE_URL` is optional for local SQLite, but useful for PostgreSQL deployment.
+- Feed variables accept comma-separated JSON URLs for extra records.
+
+## Data Commands
+
+Seed sample exam and scheme records:
+
+```bash
+python manage.py seed_data
+```
+
+Sync bundled source-backed records plus optional JSON feeds:
 
 ```bash
 python manage.py sync_real_opportunities
 ```
 
-The sync command adds source-backed records for current and official sources such as UPSC exam calendars, myScheme, National Scholarship Portal, PM Internship Scheme, DRDO INMAS, J&K Bank, HPCL Careers, NCS, Apprenticeship India, and major IT career portals. For official portals that do not publish a fixed CTC, fee or last date, the app shows "verify from official notification" or "varies by listing" instead of inventing numbers.
-
-To run the portal only from source-backed sync data instead of `seed_data.py`, use:
+Replace existing data before syncing:
 
 ```bash
 python manage.py sync_real_opportunities --replace-seed-data
 ```
 
-That command clears existing exams, schemes and job opportunities, then repopulates them from the sync command and any configured feeds.
+## Supported JSON Feed Variables
 
-JSON feed records can include:
+- `REAL_EXAM_FEEDS`
+- `REAL_SCHEME_FEEDS`
+- `REAL_OPPORTUNITY_FEEDS`
 
-Exam feeds via `REAL_EXAM_FEEDS`:
-
-- `name`, `exam_type`, `category`, `conducting_body`, `location`, `mode`
-- `date`, `registration_start_date`, `registration_end_date`
-- `application_fee`, `salary_package`, `required_skills`
-- `eligibility`, `source_name`, `source_url`, `official_notification_url`, `application_url`
-
-Scheme feeds via `REAL_SCHEME_FEEDS`:
-
-- `name`, `category`, `scheme_type`, `description`, `eligibility`
-- `benefits`, `benefit_amount`, `required_documents`
-- `registration_start_date`, `registration_end_date`
-- `source_name`, `source_url`, `official_notification_url`, `application_url`
-
-Opportunity feeds via `REAL_OPPORTUNITY_FEEDS`:
-
-- `title`, `company`, `opportunity_type`, `sector`, `location`
-- `qualification`, `skills`, `min_10th_percentage`, `min_12th_percentage`, `min_cgpa`
-- `compensation_type`, `compensation`, `salary`, `stipend`, or `ctc`
-- `registration_start_date`, `registration_end_date`, `deadline`
-- `source_name`, `source_url`, `official_notification_url`, `application_url`, `data_as_of`
-
-Structured feed import:
+Example:
 
 ```env
 REAL_EXAM_FEEDS=https://example.com/exams.json
@@ -80,17 +135,35 @@ REAL_SCHEME_FEEDS=https://example.com/schemes.json
 REAL_OPPORTUNITY_FEEDS=https://example.com/jobs.json,https://example.com/offcampus.json
 ```
 
-Optional environment variables:
+## Key Routes
 
-```env
-OPENAI_API_KEY=your_api_key
-OPENAI_MODEL=gpt-4o-mini
-OPENAI_API_BASE=https://api.openai.com/v1
-OPENAI_TIMEOUT=20
-```
+- `/` - dashboard
+- `/login/` - email login
+- `/verify_otp/` - OTP verification
+- `/profile/` - profile and document management
+- `/recommendations/` - AI recommendations
+- `/ai-assistant/` - AI assistant UI
+- `/calendar/` - reminders calendar
+- `/search/` - search results
+- `/details/<item_type>/<item_id>/` - detail page for exams, schemes, and jobs
 
-Run locally:
+## Deployment
+
+This project includes a `Procfile` for Gunicorn:
 
 ```bash
-python manage.py runserver
+gunicorn my_project.wsgi:application --timeout 120 --workers 4
 ```
+
+Static files are served with WhiteNoise, and production databases can be configured through `DATABASE_URL`.
+
+## Future Improvements
+
+- Add automated tests for views, services, and recommendation logic
+- Add admin dashboards for managing live records
+- Improve AI citation and source-trace display in the assistant
+- Add richer filtering for job and scheme discovery
+
+## License
+
+This project currently does not define a license.
