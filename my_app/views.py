@@ -40,6 +40,15 @@ def ensure_source_backed_records():
     )
 
 
+def clear_personalization_state(request):
+    for key in [
+        "ai_assistant_history",
+        "ai_recommendations",
+        "ai_profile_snapshot",
+    ]:
+        request.session.pop(key, None)
+
+
 def create_calendar_reminder(user, title, date):
     """
     Helper function to create calendar reminders
@@ -586,7 +595,10 @@ def profile_view(request):
             profile_form = UserProfileForm(request.POST, instance=profile)
             if user_form.is_valid() and profile_form.is_valid():
                 user_form.save()
-                profile_form.save()  # handles interests join()
+                profile = profile_form.save()  # handles interests join()
+                request.user.refresh_from_db()
+                profile.refresh_from_db()
+                clear_personalization_state(request)
                 return redirect("profile")
 
         # Document upload
@@ -741,6 +753,8 @@ def ai_assistant_api(request):
     profile, _ = UserProfile.objects.get_or_create(
         user=request.user
     )
+    request.user.refresh_from_db()
+    profile.refresh_from_db()
     result = answer_question(
         profile,
         question,

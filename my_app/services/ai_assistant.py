@@ -1,14 +1,19 @@
 import json
-import os
+import logging
 import re
 import urllib.error
 import urllib.request
+
+from django.conf import settings
 
 from .ai_recommendation import (
     build_eligibility_explanation,
     exam_to_document,
     job_to_document,
     profile_to_document,
+    recommend_exams,
+    recommend_jobs,
+    recommend_schemes,
     scheme_to_document,
 )
 
@@ -20,7 +25,22 @@ except ImportError:  # pragma: no cover - deployment fallback
     cosine_similarity = None
 
 
+logger = logging.getLogger(__name__)
+
 MAX_CONTEXT_ITEMS = 6
+MAX_HISTORY_MESSAGES = 8
+MAX_CANDIDATE_ITEMS = 12
+KNOWN_COMPANIES = [
+    "Accenture",
+    "Infosys",
+    "TCS",
+    "Wipro",
+    "Cognizant",
+    "Capgemini",
+    "IBM",
+    "HCL",
+    "Tech Mahindra",
+]
 
 
 def normalize_text(text):
@@ -41,12 +61,152 @@ def item_title(item, item_type):
     return f"Job: {item.title}"
 
 
+def profile_payload(profile):
+    skills = normalize_text(getattr(profile, "skills", ""))
+    interests = [
+        interest.strip()
+        for interest in normalize_text(getattr(profile, "interests", "")).split(",")
+        if interest.strip()
+    ]
+
+    degree = normalize_text(getattr(profile, "college", "")) or normalize_text(
+        getattr(profile, "education", "")
+    )
+
+    return {
+        "education": normalize_text(getattr(profile, "education", "")) or "not provided",
+        "degree": degree or "not provided",
+        "college": normalize_text(getattr(profile, "college", "")) or "not provided",
+        "cgpa": (
+            str(getattr(profile, "graduation_cgpa", "") or "").strip() or "not provided"
+        ),
+        "skills": skills or "not provided",
+        "location": normalize_text(getattr(profile, "location", "")) or "not provided",
+        "interests": interests or ["not provided"],
+        "experience": "not provided",
+        "income": normalize_text(getattr(profile, "income", "")) or "not provided",
+        "class_10_percentage": (
+            str(getattr(profile, "class_10_percentage", "") or "").strip() or "not provided"
+        ),
+        "class_12_percentage": (
+            str(getattr(profile, "class_12_percentage", "") or "").strip() or "not provided"
+        ),
+        "semester_marks": normalize_text(getattr(profile, "semester_marks", "")) or "not provided",
+    }
+
+
+def missing_profile_fields(profile):
+    payload = profile_payload(profile)
+    missing = []
+
+    if payload["education"] == "not provided":
+        missing.append("education")
+    if payload["cgpa"] == "not provided":
+        missing.append("CGPA")
+    if payload["skills"] == "not provided":
+        missing.append("skills")
+    if payload["location"] == "not provided":
+        missing.append("location")
+    if payload["interests"] == ["not provided"]:
+        missing.append("interests")
+
+    return missing
+
+
+def query_focus(query):
+    text = normalize_text(query).lower()
+
+    if any(
+        term in text
+        for term in [
+            "offer",
+            "offers",
+            "which should i join",
+            "which company should i join",
+            "joining",
+            "ctc",
+            "package",
+        ]
+    ):
+        return "offer"
+
+    if any(
+        term in text
+        for term in [
+            "job",
+            "jobs",
+            "off campus",
+            "off-campus",
+            "internship",
+            "internships",
+            "apprenticeship",
+            "hiring",
+            "career",
+            "vacancy",
+            "resume",
+        ]
+    ):
+        return "job"
+
+    if any(
+        term in text
+        for term in [
+            "scheme",
+            "scholarship",
+            "benefit",
+            "financial aid",
+            "grant",
+            "subsidy",
+            "government support",
+        ]
+    ):
+        return "scheme"
+
+    if any(
+        term in text
+        for term in [
+            "exam",
+            "prepare",
+            "preparation",
+            "study",
+            "syllabus",
+            "roadmap",
+            "jee",
+            "neet",
+            "upsc",
+            "gate",
+        ]
+    ):
+        return "exam"
+
+    return "general"
+
+
+def query_mentions_generic_portal(query):
+    text = normalize_text(query).lower()
+    return any(
+        term in text
+        for term in [
+            "portal",
+            "portals",
+            "website",
+            "websites",
+            "government portal",
+            "job site",
+            "job sites",
+            "where should i search",
+            "where can i apply",
+        ]
+    )
+
+
 def serialize_item(item, item_type, profile):
     explanation = build_eligibility_explanation(profile, item, item_type)
 
     if item_type == "exam":
         body = {
             "type": "exam",
+            "id": item.id,
             "name": item.name,
             "category": item.category,
             "opportunity_type": item.exam_type,
@@ -65,6 +225,7 @@ def serialize_item(item, item_type, profile):
     elif item_type == "scheme":
         body = {
             "type": "scheme",
+            "id": item.id,
             "name": item.name,
             "category": item.category,
             "opportunity_type": item.scheme_type,
@@ -81,6 +242,7 @@ def serialize_item(item, item_type, profile):
     else:
         body = {
             "type": "job",
+            "id": item.id,
             "name": item.title,
             "company_or_org": item.company_or_org,
             "category": item.sector,
@@ -102,6 +264,17 @@ def serialize_item(item, item_type, profile):
     return body
 
 
+def extract_company_names(query):
+    text = normalize_text(query).lower()
+    companies = []
+
+    for company in KNOWN_COMPANIES:
+        if company.lower() in text:
+            companies.append(company)
+
+    return companies
+
+
 def searchable_document(item, item_type):
     if item_type == "exam":
         return exam_to_document(item)
@@ -112,24 +285,131 @@ def searchable_document(item, item_type):
     return scheme_to_document(item)
 
 
+def candidate_rows(profile, focus, exams, schemes, jobs, query):
+    query_is_portal_hunting = query_mentions_generic_portal(query)
+
+    if focus == "offer":
+        return []
+
+    if focus == "job":
+        ranked_jobs = recommend_jobs(profile, jobs)[:MAX_CANDIDATE_ITEMS]
+        if not query_is_portal_hunting:
+            ranked_jobs = sorted(
+                ranked_jobs,
+                key=lambda item: (
+                    getattr(item, "opportunity_type", "") == "career_portal",
+                    -getattr(item, "ai_score", 0),
+                ),
+            )
+
+        return [
+            (
+                "job",
+                item,
+                searchable_document(item, "job"),
+                getattr(item, "ai_score", 0) / 100.0,
+            )
+            for item in ranked_jobs
+        ]
+
+    if focus == "scheme":
+        ranked_schemes = recommend_schemes(profile, schemes)[:MAX_CANDIDATE_ITEMS]
+        return [
+            (
+                "scheme",
+                item,
+                searchable_document(item, "scheme"),
+                getattr(item, "ai_score", 0) / 100.0,
+            )
+            for item in ranked_schemes
+        ]
+
+    if focus == "exam":
+        ranked_exams = recommend_exams(profile, exams)[:MAX_CANDIDATE_ITEMS]
+        return [
+            (
+                "exam",
+                item,
+                searchable_document(item, "exam"),
+                getattr(item, "ai_score", 0) / 100.0,
+            )
+            for item in ranked_exams
+        ]
+
+    rows = []
+
+    for item in recommend_jobs(profile, jobs)[:4]:
+        rows.append(
+            (
+                "job",
+                item,
+                searchable_document(item, "job"),
+                getattr(item, "ai_score", 0) / 100.0,
+            )
+        )
+
+    for item in recommend_schemes(profile, schemes)[:4]:
+        rows.append(
+            (
+                "scheme",
+                item,
+                searchable_document(item, "scheme"),
+                getattr(item, "ai_score", 0) / 100.0,
+            )
+        )
+
+    for item in recommend_exams(profile, exams)[:4]:
+        rows.append(
+            (
+                "exam",
+                item,
+                searchable_document(item, "exam"),
+                getattr(item, "ai_score", 0) / 100.0,
+            )
+        )
+
+    return rows[:MAX_CANDIDATE_ITEMS]
+
+
+def fallback_profile_rows(profile, focus, exams, schemes, jobs, limit):
+    if focus == "offer":
+        return []
+
+    if focus == "job":
+        return [("job", item) for item in recommend_jobs(profile, jobs)[:limit]]
+
+    if focus == "scheme":
+        return [("scheme", item) for item in recommend_schemes(profile, schemes)[:limit]]
+
+    if focus == "exam":
+        return [("exam", item) for item in recommend_exams(profile, exams)[:limit]]
+
+    rows = []
+
+    for item in recommend_jobs(profile, jobs)[:2]:
+        rows.append(("job", item))
+
+    for item in recommend_schemes(profile, schemes)[:2]:
+        rows.append(("scheme", item))
+
+    for item in recommend_exams(profile, exams)[:2]:
+        rows.append(("exam", item))
+
+    return rows[:limit]
+
+
 def retrieve_relevant_items(profile, query, exams, schemes, jobs=None, limit=MAX_CONTEXT_ITEMS):
-    jobs = jobs or []
-    rows = [
-        ("exam", item, searchable_document(item, "exam"))
-        for item in exams
-    ] + [
-        ("scheme", item, searchable_document(item, "scheme"))
-        for item in schemes
-    ] + [
-        ("job", item, searchable_document(item, "job"))
-        for item in jobs
-    ]
+    jobs = list(jobs or [])
+    exams = list(exams)
+    schemes = list(schemes)
+    focus = query_focus(query)
+    rows = candidate_rows(profile, focus, exams, schemes, jobs, query)
 
     if not rows:
         return []
 
     profile_context = profile_to_document(profile)
-    query_document = f"{query} {profile_context}"
+    query_document = f"{query}\n{profile_context}"
 
     if TfidfVectorizer is not None and cosine_similarity is not None:
         documents = [query_document, *[row[2] for row in rows]]
@@ -140,93 +420,139 @@ def retrieve_relevant_items(profile, query, exams, schemes, jobs=None, limit=MAX
             sublinear_tf=True,
         ).fit_transform(documents)
         similarities = cosine_similarity(matrix[0:1], matrix[1:]).flatten()
-        scored_rows = [
-            (score, row[0], row[1])
-            for score, row in zip(similarities, rows)
-        ]
+        scored_rows = []
+
+        for similarity, (item_type, item, _, profile_score) in zip(similarities, rows):
+            score = (float(similarity) * 0.62) + (profile_score * 0.38)
+
+            if (
+                focus == "job"
+                and getattr(item, "opportunity_type", "") == "career_portal"
+                and not query_mentions_generic_portal(query)
+            ):
+                score -= 0.08
+
+            scored_rows.append((score, item_type, item))
     else:
         query_tokens = tokenize(query_document)
         scored_rows = []
 
-        for item_type, item, document in rows:
+        for item_type, item, document, profile_score in rows:
             item_tokens = tokenize(document)
-            score = len(query_tokens & item_tokens) / max(len(query_tokens), 1)
+            lexical_score = len(query_tokens & item_tokens) / max(len(query_tokens), 1)
+            score = (lexical_score * 0.62) + (profile_score * 0.38)
+
+            if (
+                focus == "job"
+                and getattr(item, "opportunity_type", "") == "career_portal"
+                and not query_mentions_generic_portal(query)
+            ):
+                score -= 0.08
+
             scored_rows.append((score, item_type, item))
 
     scored_rows.sort(key=lambda row: row[0], reverse=True)
 
-    top_rows = [
+    positive_rows = [
         (item_type, item)
         for score, item_type, item in scored_rows
-        if score > 0
+        if score > 0.03
     ][:limit]
 
-    if top_rows:
-        return top_rows
+    if positive_rows:
+        return positive_rows
 
-    return [(item_type, item) for _, item_type, item in scored_rows[:limit]]
-
-
-def profile_summary(profile):
-    return {
-        "education": profile.education or "not provided",
-        "income": profile.income or "not provided",
-        "location": profile.location or "not provided",
-        "gender": profile.gender or "not provided",
-        "caste": profile.caste or "not provided",
-        "interests": profile.interests or "not provided",
-        "skills": getattr(profile, "skills", "") or "not provided",
-        "10th_percentage": str(getattr(profile, "class_10_percentage", "") or "not provided"),
-        "12th_percentage": str(getattr(profile, "class_12_percentage", "") or "not provided"),
-        "graduation_cgpa": str(getattr(profile, "graduation_cgpa", "") or "not provided"),
-        "semester_marks": getattr(profile, "semester_marks", "") or "not provided",
-    }
+    return fallback_profile_rows(profile, focus, exams, schemes, jobs, limit)
 
 
-def build_prompt(profile, query, context_items, history=None):
-    history = history or []
+def conversation_history(history):
+    normalized = []
 
+    for item in history or []:
+        role = normalize_text(item.get("role", ""))
+        content = normalize_text(item.get("content", ""))
+
+        if role not in {"user", "assistant"} or not content:
+            continue
+
+        normalized.append({"role": role, "content": content})
+
+    return normalized[-MAX_HISTORY_MESSAGES:]
+
+
+def build_system_prompt():
     return (
-        "You are PGIP AI, a careful assistant for Indian government schemes, "
-        "exams, jobs, internships, apprenticeships and off-campus opportunities. "
-        "Answer only from the provided portal context. Do not invent "
-        "eligibility, benefits, dates, links, or official status. If information "
-        "is missing, say what should be verified from the official notification. "
-        "Use a helpful, concise tone.\n\n"
-        f"User profile:\n{json.dumps(profile_summary(profile), indent=2)}\n\n"
-        f"Recent chat history:\n{json.dumps(history[-6:], indent=2)}\n\n"
-        f"User question:\n{query}\n\n"
-        "Retrieved portal context:\n"
-        f"{json.dumps(context_items, indent=2)}\n\n"
-        "Answer format:\n"
-        "1. Direct answer\n"
-        "2. Best matches with reasons, compensation and last date where available\n"
-        "3. Documents or next steps\n"
-        "4. Anything the user must verify"
+        "You are a career guidance assistant for jobs, exams, skills, internships, "
+        "government schemes, and education guidance. Use the user's profile and the "
+        "retrieved portal records to give personalized recommendations. Respond "
+        "naturally. Do not repeat fixed template messages. If data is missing, ask "
+        "for one specific missing field politely. Never suggest irrelevant exams or "
+        "jobs. Stay accurate and grounded in the supplied profile and retrieved data."
     )
 
 
-def call_openai_llm(prompt):
-    api_key = os.environ.get("OPENAI_API_KEY")
+def build_openai_messages(profile, query, context_items, history=None):
+    profile_data = profile_payload(profile)
+    missing_fields = missing_profile_fields(profile)
+    focus = query_focus(query)
+
+    messages = [
+        {
+            "role": "system",
+            "content": build_system_prompt(),
+        },
+        {
+            "role": "system",
+            "content": (
+                "User profile: "
+                + json.dumps(profile_data, ensure_ascii=True)
+            ),
+        },
+        {
+            "role": "system",
+            "content": (
+                "Query focus: "
+                + focus
+                + ". Missing profile fields: "
+                + (", ".join(missing_fields) if missing_fields else "none")
+            ),
+        },
+        {
+            "role": "system",
+            "content": (
+                "Retrieved portal records: "
+                + json.dumps(context_items, ensure_ascii=True)
+            ),
+        },
+    ]
+
+    messages.extend(conversation_history(history))
+    messages.append({"role": "user", "content": normalize_text(query)})
+    return messages
+
+
+def call_openai_llm(messages):
+    api_key = getattr(settings, "OPENAI_API_KEY", "")
 
     if not api_key:
         return None, "OPENAI_API_KEY is not configured."
 
-    base_url = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1").rstrip("/")
-    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-    timeout = int(os.environ.get("OPENAI_TIMEOUT", "20"))
+    base_url = getattr(
+        settings,
+        "OPENAI_API_BASE",
+        "https://api.openai.com/v1",
+    ).rstrip("/")
+    model = getattr(settings, "OPENAI_MODEL", "gpt-4o-mini")
+    timeout = int(getattr(settings, "OPENAI_TIMEOUT", 20))
+    temperature = float(getattr(settings, "OPENAI_TEMPERATURE", 0.7))
+    top_p = float(getattr(settings, "OPENAI_TOP_P", 0.9))
 
     payload = {
         "model": model,
-        "messages": [
-            {
-                "role": "system",
-                "content": "You answer with grounded, cautious RAG responses for PGIP.",
-            },
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.2,
-        "max_tokens": 700,
+        "messages": messages,
+        "temperature": temperature,
+        "top_p": top_p,
+        "max_tokens": 900,
     }
 
     request = urllib.request.Request(
@@ -246,260 +572,182 @@ def call_openai_llm(prompt):
         return None, f"LLM request failed: {exc}"
 
     try:
-        return data["choices"][0]["message"]["content"].strip(), None
+        content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError):
         return None, "LLM response did not contain an answer."
 
-
-def looks_like_study_question(query):
-    query = query.lower()
-    return any(
-        term in query
-        for term in [
-            "study",
-            "prepare",
-            "preparation",
-            "syllabus",
-            "roadmap",
-            "subjects",
-            "topics",
-            "particular exam",
-        ]
-    )
-
-
-def looks_like_offer_question(query):
-    query = query.lower()
-    return any(
-        term in query
-        for term in ["offer", "joining", "company", "companies", "package", "ctc"]
-    )
-
-
-def looks_like_scheme_question(query):
-    query = query.lower()
-    return any(
-        term in query
-        for term in ["scheme", "scholarship", "apply", "benefit", "financial aid"]
-    )
-
-
-def looks_like_job_question(query):
-    query = query.lower()
-    return any(
-        term in query
-        for term in [
-            "job",
-            "jobs",
-            "off campus",
-            "off-campus",
-            "internship",
-            "apprenticeship",
-            "hiring",
-            "career",
-            "vacancy",
-        ]
-    )
-
-
-def exam_study_plan(query, context_items):
-    exams = [item for item in context_items if item["type"] == "exam"]
-
-    if not exams:
-        return (
-            "I could not identify a matching exam in the portal data. Tell me the exact exam name, "
-            "and I can create a preparation roadmap."
-        )
-
-    exam = exams[0]
-    category = normalize_text(exam.get("category", "")).lower()
-    plan = [
-        f"Study roadmap for {exam['name']}:",
-        "",
-        f"Eligibility/date in portal: {exam.get('eligibility', 'Not listed')} · {exam.get('date', 'Not listed')}",
-        "",
-        "1. Start with the official notification and syllabus.",
-        "2. Make a topic checklist and mark each topic as weak, medium, or strong.",
-        "3. Study concepts first, then solve previous-year questions, then take timed mocks.",
-    ]
-
-    if "engineering" in category:
-        plan.extend([
-            "4. Core subjects: Mathematics, Physics, Chemistry, aptitude/problem solving.",
-            "5. For coding or engineering jobs/exams, add DSA, DBMS, OS, CN, OOP, SQL, and one project revision.",
-        ])
-    elif "medical" in category:
-        plan.extend([
-            "4. Core subjects: Biology, Chemistry, Physics, NCERT-based revision, diagrams, and daily MCQ practice.",
-        ])
-    elif "banking" in category:
-        plan.extend([
-            "4. Core subjects: Quantitative Aptitude, Reasoning, English, General Awareness, Banking Awareness, and speed practice.",
-        ])
-    elif "civil" in category or "employment" in category:
-        plan.extend([
-            "4. Core subjects: General Studies, Current Affairs, Quantitative Aptitude, Reasoning, English, and exam-specific paper practice.",
-        ])
-    else:
-        plan.extend([
-            "4. Core subjects: revise the category-specific syllabus, aptitude, English, reasoning, and current affairs if applicable.",
-        ])
-
-    plan.extend([
-        "",
-        "Weekly structure:",
-        "Weekdays: 2 concept blocks + 1 practice block.",
-        "Weekend: 1 mock test + error analysis + backlog clearing.",
-        "",
-        "Documents to keep ready: "
-        + ", ".join(exam["ai_explanation"]["suggested_documents"])
-        + ".",
-    ])
-
-    return "\n".join(plan)
-
-
-def offer_comparison_answer(query, profile):
-    skills = normalize_text(getattr(profile, "skills", ""))
-
-    return "\n".join([
-        "To choose between 3-4 company offers, compare them with a weighted score instead of only CTC:",
-        "",
-        "1. Role fit: Does the work match your skills and long-term goal?",
-        f"   Your saved skills: {skills or 'not added yet'}.",
-        "2. Learning curve: product work, mentorship, tech stack, code quality, and training.",
-        "3. Compensation: fixed pay, variable pay, joining bonus, relocation, bond, and in-hand salary.",
-        "4. Growth: promotion cycle, internal mobility, project quality, and brand value.",
-        "5. Stability and risk: company financials, layoffs, bench policy, probation rules.",
-        "6. Location and lifestyle: commute, remote policy, work-life balance, night shifts.",
-        "",
-        "Best practical rule: for a fresher, choose the offer with the strongest role + learning + stability unless another offer has a clearly higher fixed salary without a bond or risky terms.",
-        "",
-        "Send company names, role, CTC breakup, location, bond, tech stack, and your career goal. I can rank them for you.",
-    ])
-
-
-def scheme_guidance_answer(context_items):
-    schemes = [item for item in context_items if item["type"] == "scheme"]
-
-    if not schemes:
-        return (
-            "I did not find a strong scheme match in the portal data. Update your income, caste/category, location, education, and interests in Profile for better results."
-        )
-
-    lines = [
-        "Based on your profile, you should first check these kinds of schemes:",
-        "",
-    ]
-
-    for index, scheme in enumerate(schemes[:5], start=1):
-        explanation = scheme["ai_explanation"]
-        lines.extend([
-            f"{index}. {scheme['name']} ({scheme.get('opportunity_type', 'Scheme')})",
-            f"   Why: {explanation['matching_factors'][0]}",
-            f"   Confidence: {explanation['confidence']}% · {explanation['verdict']}",
-        ])
-
-    lines.extend([
-        "",
-        "In general, students should check scholarships, fee assistance, skill training, internship/apprenticeship, startup grants, and state-resident schemes.",
-        "Keep marksheets, income certificate, Aadhaar, domicile/address proof, bank details, and caste/category certificate ready where applicable.",
-    ])
-
-    return "\n".join(lines)
-
-
-def job_guidance_answer(context_items, profile):
-    jobs = [item for item in context_items if item["type"] == "job"]
-
-    if not jobs:
-        return (
-            "I did not find a strong job or off-campus match in the portal data. "
-            "Add skills, 10th/12th marks, graduation CGPA and semester marks in Profile, "
-            "then search again with a role like Python developer, banking apprentice or data analyst."
-        )
-
-    lines = [
-        "Based on your profile, these opportunity types are worth checking first:",
-        "",
-    ]
-
-    for index, job in enumerate(jobs[:5], start=1):
-        explanation = job["ai_explanation"]
-        lines.extend([
-            f"{index}. {job['name']} - {job.get('company_or_org', 'Organization not listed')}",
-            f"   Type: {job.get('opportunity_type', 'Job')}",
-            f"   Compensation: {job.get('compensation', 'Not listed')}",
-            f"   Registration: {job.get('registration_window', 'Not listed')}",
-            f"   Why: {explanation['matching_factors'][0]}",
-            f"   Confidence: {explanation['confidence']}% - {explanation['verdict']}",
-        ])
-
-    profile_skills = normalize_text(getattr(profile, "skills", ""))
-    lines.extend([
-        "",
-        f"Your saved skills: {profile_skills or 'not added yet'}.",
-        "For IT/off-campus roles, strengthen DSA, SQL, one backend or frontend stack, aptitude, resume projects and interview communication.",
-        "For government apprenticeships/jobs, check official notification, eligibility cutoff, age, category relaxation, exam pattern, stipend/pay scale and last date before applying.",
-    ])
-
-    return "\n".join(lines)
+    return normalize_text(content), None
 
 
 def local_grounded_answer(query, context_items, profile=None):
-    if looks_like_offer_question(query):
-        return offer_comparison_answer(query, profile)
+    profile = profile or object()
+    profile_data = profile_payload(profile)
+    missing = missing_profile_fields(profile)
+    focus = query_focus(query)
+    companies = extract_company_names(query)
 
-    if looks_like_study_question(query):
-        return exam_study_plan(query, context_items)
+    if focus == "offer":
+        company_line = ", ".join(companies) if companies else "the companies you mentioned"
+        primary_track = "software engineering"
 
-    if looks_like_job_question(query):
-        return job_guidance_answer(context_items, profile)
+        skills_text = profile_data["skills"].lower()
+        if any(term in skills_text for term in ["django", "python", "java", "dbms", "sql"]):
+            primary_track = "backend or full-stack software roles"
+        elif any(term in skills_text for term in ["excel", "power bi", "analytics", "data"]):
+            primary_track = "data or analytics roles"
 
-    if looks_like_scheme_question(query):
-        return scheme_guidance_answer(context_items)
+        lines = [
+            f"For a fresher profile like yours, I would compare {company_line} mainly on role quality, learning curve, bond, location, and fixed pay, not just brand name.",
+            "",
+            f"Your current profile suggests you should prioritize {primary_track} because your saved skills are {profile_data['skills']} and your CGPA is {profile_data['cgpa']}.",
+        ]
 
-    if not context_items:
-        return (
-            "I could not find matching exams or schemes in the portal database. "
-            "Try asking with your education, location, income range, or category."
-        )
+        if {"TCS", "Infosys", "Wipro", "Accenture"}.issubset(set(companies)):
+            lines.extend(
+                [
+                    "",
+                    "If the role, pay, and location are broadly similar, my default shortlist would be:",
+                    "1. Accenture or Infosys for stronger early-career project exposure and broader developer learning.",
+                    "2. TCS for stability, scale, and internal mobility.",
+                    "3. Wipro if the exact project, manager, or tech stack is clearly better than the others.",
+                ]
+            )
 
-    lines = [
-        "Based on your profile and the portal database, these are the strongest matches I found:",
-        "",
-    ]
-
-    for index, item in enumerate(context_items[:4], start=1):
-        explanation = item["ai_explanation"]
         lines.extend(
             [
-                f"{index}. {item['name']} ({item['type'].title()})",
-                f"   Match: {explanation['verdict']} with {explanation['confidence']}% confidence.",
-                f"   Why: {' '.join(explanation['matching_factors'][:2])}",
+                "",
+                "My practical rule for you:",
+                "- Pick the offer that gives real coding, backend, data, or project ownership closest to your skills.",
+                "- Avoid choosing only by highest headline CTC if the role is support-heavy, has a bond, or weak learning.",
+                "- Prefer the offer with better tech stack, training, mentor quality, and project allocation clarity.",
             ]
         )
 
-        if item["type"] == "job":
-            lines.append(f"   Compensation: {item.get('compensation', 'Not listed')}")
-            lines.append(f"   Registration: {item.get('registration_window', 'Not listed')}")
+        lines.extend(
+            [
+                "",
+                "To rank these offers properly, send these missing details:",
+                "- role name",
+                "- fixed CTC and variable pay",
+                "- location",
+                "- bond or service agreement",
+                "- tech stack or project type",
+            ]
+        )
 
-        if explanation["concerns"]:
-            lines.append(f"   Check: {explanation['concerns'][0]}")
+        return "\n".join(lines)
 
-    documents = []
-    for item in context_items[:3]:
-        documents.extend(item["ai_explanation"]["suggested_documents"])
+    if focus == "job":
+        lines = [
+            f"Based on your profile, I would prioritize job tracks aligned with {profile_data['skills']} rather than generic portals.",
+            "",
+        ]
+    elif focus == "scheme":
+        lines = [
+            "Based on your current profile, these scheme directions look the most relevant right now.",
+            "",
+        ]
+    elif focus == "exam":
+        lines = [
+            "Based on your current profile, these exam directions look the most relevant right now.",
+            "",
+        ]
+    else:
+        lines = [
+            "Here is a profile-aware answer using the current portal data and your saved academic details.",
+            "",
+        ]
 
-    unique_documents = list(dict.fromkeys(documents))[:6]
+    if context_items:
+        lines.append("Most relevant matches right now:")
+        lines.append("")
+
+        for index, item in enumerate(context_items[:4], start=1):
+            explanation = item["ai_explanation"]
+            summary_bits = [
+                f"{index}. {item['name']} ({item['type']})",
+                f"   Why it fits: {explanation['matching_factors'][0]}",
+                f"   Confidence: {explanation['confidence']}% - {explanation['verdict']}",
+            ]
+
+            if item["type"] == "job":
+                summary_bits.append(
+                    f"   Compensation: {item.get('compensation', 'Not listed')}"
+                )
+                summary_bits.append(
+                    f"   Registration: {item.get('registration_window', 'Not listed')}"
+                )
+            elif item["type"] in {"exam", "scheme"}:
+                summary_bits.append(
+                    f"   Eligibility: {item.get('eligibility', 'Not listed')}"
+                )
+                summary_bits.append(
+                    f"   Date: {item.get('date', 'Not listed')}"
+                )
+
+            lines.extend(summary_bits)
+    else:
+        lines.extend(
+            [
+                "I do not see a strong direct portal record for that question right now.",
+                "I would narrow the answer further using your education, skills, location, and the exact role or exam name you want to target.",
+            ]
+        )
 
     lines.extend(
         [
             "",
-            "Suggested documents to keep ready:",
-            ", ".join(unique_documents) + ".",
+            "Profile signals I used:",
+            f"- Education / degree: {profile_data['education']} / {profile_data['degree']}",
+            f"- CGPA: {profile_data['cgpa']}",
+            f"- Skills: {profile_data['skills']}",
+            f"- Location: {profile_data['location']}",
+            f"- Interests: {', '.join(profile_data['interests'])}",
+        ]
+    )
+
+    if focus == "job":
+        lines.extend(
+            [
+                "",
+                "Suggested next steps:",
+                "- Keep backend-friendly resume projects visible.",
+                "- Strengthen aptitude, SQL, DBMS, OOP, and interview communication for off-campus hiring.",
+                "- Apply first to roles closest to Python, Django, SQL, Java, and DBMS rather than broad portals.",
+            ]
+        )
+    elif focus == "scheme":
+        lines.extend(
+            [
+                "",
+                "Suggested next steps:",
+                "- Check eligibility carefully against education, income, and category rules.",
+                "- Keep Aadhaar, marksheets, bank details, and any income/category documents ready.",
+            ]
+        )
+    elif focus == "exam":
+        lines.extend(
+            [
+                "",
+                "Suggested next steps:",
+                "- Shortlist one or two target exams instead of spreading preparation too wide.",
+                "- Build a weekly plan around syllabus, mocks, and previous-year questions.",
+            ]
+        )
+
+    if missing:
+        lines.extend(
+            [
+                "",
+                "To improve the next answer, add this profile field:",
+                f"- {missing[0]}",
+            ]
+        )
+
+    lines.extend(
+        [
             "",
-            "Please verify final eligibility, official dates, and application rules from the official notification before applying.",
+            "Verify final eligibility, deadlines, and official application rules from the linked source before applying.",
         ]
     )
 
@@ -507,12 +755,15 @@ def local_grounded_answer(query, context_items, profile=None):
 
 
 def answer_question(profile, query, exams, schemes, jobs=None, history=None):
+    if hasattr(profile, "refresh_from_db"):
+        profile.refresh_from_db()
+
     query = normalize_text(query)
 
     if not query:
         return {
-            "answer": "Ask me about eligible schemes, exams, documents, deadlines, or application steps.",
-            "provider": "local",
+            "answer": "Ask me about jobs, internships, exams, schemes, skills, or what to improve in your profile for better matches.",
+            "provider": "local-semantic-rag",
             "items": [],
         }
 
@@ -522,8 +773,27 @@ def answer_question(profile, query, exams, schemes, jobs=None, history=None):
         for item_type, item in relevant
     ]
 
-    prompt = build_prompt(profile, query, context_items, history)
-    llm_answer, llm_error = call_openai_llm(prompt)
+    messages = build_openai_messages(profile, query, context_items, history)
+
+    logger.info(
+        "AI assistant request | message=%s | profile=%s | results=%s",
+        query,
+        json.dumps(profile_payload(profile), ensure_ascii=True),
+        json.dumps(
+            [
+                {
+                    "type": item["type"],
+                    "name": item["name"],
+                    "location": item.get("location", ""),
+                    "category": item.get("category", ""),
+                }
+                for item in context_items
+            ],
+            ensure_ascii=True,
+        ),
+    )
+
+    llm_answer, llm_error = call_openai_llm(messages)
 
     if llm_answer:
         answer = llm_answer
@@ -531,6 +801,13 @@ def answer_question(profile, query, exams, schemes, jobs=None, history=None):
     else:
         answer = local_grounded_answer(query, context_items, profile)
         provider = "local-semantic-rag"
+
+    logger.info(
+        "AI assistant response | provider=%s | error=%s | answer=%s",
+        provider,
+        llm_error or "",
+        answer,
+    )
 
     source_cards = [
         {
@@ -545,16 +822,8 @@ def answer_question(profile, query, exams, schemes, jobs=None, history=None):
                 or getattr(item, "deadline", "")
                 or "Not listed"
             ),
-            "compensation": (
-                item.compensation_summary
-                if item_type == "job"
-                else ""
-            ),
-            "registration_window": (
-                item.registration_window
-                if item_type == "job"
-                else ""
-            ),
+            "compensation": item.compensation_summary if item_type == "job" else "",
+            "registration_window": item.registration_window if item_type == "job" else "",
             "confidence": build_eligibility_explanation(profile, item, item_type)["confidence"],
         }
         for item_type, item in relevant

@@ -194,6 +194,16 @@ EMAIL_HOST_PASSWORD = os.environ.get(
 )
 
 # =====================================
+# OpenAI
+# =====================================
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1")
+OPENAI_TIMEOUT = int(os.environ.get("OPENAI_TIMEOUT", "20"))
+OPENAI_TEMPERATURE = float(os.environ.get("OPENAI_TEMPERATURE", "0.7"))
+OPENAI_TOP_P = float(os.environ.get("OPENAI_TOP_P", "0.9"))
+
+# =====================================
 # Default Auto Field
 # =====================================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

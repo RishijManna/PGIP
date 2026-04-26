@@ -77,7 +77,8 @@ Open `http://127.0.0.1:8000/` in your browser.
 
 ## Environment Variables
 
-Create a `.env` file in the project root.
+For local development, you can use a `.env` file in the project root.
+For deployment, set the same values as environment variables in your hosting platform instead of committing them to GitHub.
 
 ```env
 DJANGO_SECRET_KEY=your-secret-key
@@ -156,6 +157,25 @@ gunicorn my_project.wsgi:application --timeout 120 --workers 4
 ```
 
 Static files are served with WhiteNoise, and production databases can be configured through `DATABASE_URL`.
+
+### PythonAnywhere OpenAI setup
+
+Do not hardcode the OpenAI API key in tracked source code.
+
+For PythonAnywhere deployment, add the key in your WSGI config or as an app environment variable:
+
+```python
+import os
+
+os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
+os.environ["OPENAI_MODEL"] = "gpt-4o-mini"
+os.environ["OPENAI_API_BASE"] = "https://api.openai.com/v1"
+os.environ["OPENAI_TIMEOUT"] = "20"
+os.environ["OPENAI_TEMPERATURE"] = "0.7"
+os.environ["OPENAI_TOP_P"] = "0.9"
+```
+
+Then reload the web app from the PythonAnywhere dashboard.
 
 ## Future Improvements
 

@@ -172,6 +172,94 @@ class AiRecommendationTests(TestCase):
         self.assertEqual(api_response.status_code, 200)
         self.assertIn("answer", api_response.json())
 
+    def test_ai_assistant_job_question_returns_job_sources_not_irrelevant_exams(self):
+        Exam.objects.create(
+            name="Medical Entrance Example",
+            exam_type="National Level",
+            category="Medical",
+            location="Delhi",
+            mode="Offline",
+            e_eligibility="12th Pass",
+        )
+        JobOpportunity.objects.create(
+            title="Python Backend Intern",
+            company_or_org="Example Tech",
+            opportunity_type="internship",
+            sector="Information Technology",
+            location="All India",
+            qualification="Graduate",
+            required_skills="Python, Django, SQL",
+            source_name="Example Tech",
+            source_url="https://example.com/intern",
+        )
+
+        result = answer_question(
+            self.profile,
+            "Which jobs match my skills?",
+            Exam.objects.all(),
+            Scheme.objects.none(),
+            JobOpportunity.objects.all(),
+        )
+
+        self.assertTrue(result["items"])
+        self.assertTrue(all(item["type"] == "job" for item in result["items"]))
+
+    def test_ai_assistant_prefers_specific_skill_job_over_generic_portal(self):
+        JobOpportunity.objects.create(
+            title="Generic Careers Portal",
+            company_or_org="Example Portal",
+            opportunity_type="career_portal",
+            sector="Employment",
+            location="All India",
+            qualification="Varies",
+            source_name="Example Portal",
+            source_url="https://example.com/portal",
+        )
+        specific_job = JobOpportunity.objects.create(
+            title="Junior Django Developer",
+            company_or_org="Example Tech",
+            opportunity_type="it_offcampus",
+            sector="Information Technology",
+            location="All India",
+            qualification="Graduate",
+            required_skills="Python, Django, SQL",
+            source_name="Example Tech",
+            source_url="https://example.com/django",
+        )
+
+        result = answer_question(
+            self.profile,
+            "Which jobs match my Python and Django skills?",
+            Exam.objects.none(),
+            Scheme.objects.none(),
+            JobOpportunity.objects.all(),
+        )
+
+        self.assertTrue(result["items"])
+        self.assertEqual(result["items"][0]["title"], f"Job: {specific_job.title}")
+
+    def test_ai_assistant_offer_question_does_not_fall_back_to_exams(self):
+        Exam.objects.create(
+            name="Graduate Level Exam",
+            exam_type="Government",
+            category="Employment",
+            location="All India",
+            mode="Online",
+            e_eligibility="Graduate",
+        )
+
+        result = answer_question(
+            self.profile,
+            "I have offers from TCS, Infosys, Wipro and Accenture. Which should I join?",
+            Exam.objects.all(),
+            Scheme.objects.none(),
+            JobOpportunity.objects.none(),
+        )
+
+        self.assertIn("Accenture", result["answer"])
+        self.assertIn("Infosys", result["answer"])
+        self.assertFalse(result["items"])
+
     def test_job_recommendation_uses_skills_and_marks(self):
         job = JobOpportunity.objects.create(
             title="Django Developer Fresher",
@@ -198,6 +286,50 @@ class AiRecommendationTests(TestCase):
         self.assertTrue(
             any("skill match" in reason for reason in recommendations[0].ai_reasons)
         )
+
+    def test_ai_assistant_uses_updated_profile_data_immediately(self):
+        JobOpportunity.objects.create(
+            title="Data Analyst Apprentice",
+            company_or_org="Analytics Org",
+            opportunity_type="apprenticeship",
+            sector="Analytics",
+            location="All India",
+            qualification="Graduate",
+            required_skills="Excel, SQL, Python",
+            source_name="Analytics Org",
+            source_url="https://example.com/analytics",
+        )
+
+        blank_user = User.objects.create_user(
+            username="updated-profile@example.com",
+            email="updated-profile@example.com",
+        )
+        blank_profile = UserProfile.objects.create(user=blank_user)
+
+        first_result = answer_question(
+            blank_profile,
+            "Which jobs match my skills?",
+            Exam.objects.none(),
+            Scheme.objects.none(),
+            JobOpportunity.objects.all(),
+        )
+
+        blank_profile.skills = "Excel, SQL, Python"
+        blank_profile.education = "Undergraduate"
+        blank_profile.graduation_cgpa = 8.4
+        blank_profile.location = "All India"
+        blank_profile.save()
+
+        second_result = answer_question(
+            blank_profile,
+            "Which jobs match my skills?",
+            Exam.objects.none(),
+            Scheme.objects.none(),
+            JobOpportunity.objects.all(),
+        )
+
+        self.assertNotEqual(first_result["answer"], second_result["answer"])
+        self.assertTrue(second_result["items"])
 
     def test_job_recommendation_falls_back_to_live_source_jobs(self):
         blank_user = User.objects.create_user(
