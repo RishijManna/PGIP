@@ -1,54 +1,65 @@
-<!-- Navigation Bar -->
-<div class="navbar">
-    <div class="nav-brand">
+<!-- Responsive navigation shell shared across dashboard pages -->
+<div class="navbar" id="siteNavbar">
+    <a href="{% url 'dashboard' %}" class="nav-brand" aria-label="PGIP home">
         <i class="fas fa-graduation-cap"></i>
-        PGIP
-    </div>
+        <span>PGIP</span>
+    </a>
 
-    <div class="nav-left">
-        <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-            <i class="fas fa-th-large"></i>
-            <span>Dashboard</span>
-        </a>
-        <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-        </a>
-        <a href="{% url 'calendar' %}" class="{% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
-            <i class="fas fa-calendar"></i>
-            <span>Calendar</span>
-        </a>
-        <a href="{% url 'recommendations' %}" class="{% if request.resolver_match.url_name == 'recommendations' %}active{% endif %}">
-            <i class="fas fa-lightbulb"></i>
-            <span>Recommendations</span>
-        </a>
-        <a href="{% url 'ai_assistant' %}" class="{% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}">
-            <i class="fas fa-wand-magic-sparkles"></i>
-            <span>AI Assistant</span>
-        </a>
-        <a href="{% url 'contact' %}" class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}">
-            <i class="fas fa-envelope"></i>
-            <span>Contact</span>
-        </a>
-    </div>
+    <button class="mobile-menu-btn"
+            id="navMenuToggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="navDrawer"
+            aria-label="Toggle navigation menu">
+        <i class="fas fa-bars"></i>
+        <span>Menu</span>
+    </button>
 
-    <div class="nav-right">
-        <button class="dark-btn" id="dark-toggle" type="button">
-            <i class="fas fa-moon"></i>
-            <span>Dark Mode</span>
-        </button>
+    <div class="nav-center" id="navDrawer">
+        <div class="nav-left">
+            <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" data-nav-link>
+                <i class="fas fa-th-large"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}" data-nav-link>
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <a href="{% url 'calendar' %}" class="{% if request.resolver_match.url_name == 'calendar' %}active{% endif %}" data-nav-link>
+                <i class="fas fa-calendar"></i>
+                <span>Calendar</span>
+            </a>
+            <a href="{% url 'recommendations' %}" class="{% if request.resolver_match.url_name == 'recommendations' %}active{% endif %}" data-nav-link>
+                <i class="fas fa-lightbulb"></i>
+                <span>Recommendations</span>
+            </a>
+            <a href="{% url 'ai_assistant' %}" class="{% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}" data-nav-link>
+                <i class="fas fa-wand-magic-sparkles"></i>
+                <span>AI Assistant</span>
+            </a>
+            <a href="{% url 'contact' %}" class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}" data-nav-link>
+                <i class="fas fa-envelope"></i>
+                <span>Contact</span>
+            </a>
+        </div>
 
-        {% if user.is_authenticated %}
-        <a href="{% url 'logout' %}" class="btn-logout">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-        </a>
-        {% else %}
-        <a href="{% url 'login' %}" class="btn-logout">
-            <i class="fas fa-sign-in-alt"></i>
-            <span>Login</span>
-        </a>
-        {% endif %}
+        <div class="nav-right">
+            <button class="dark-btn" id="dark-toggle" type="button">
+                <i class="fas fa-moon"></i>
+                <span>Dark Mode</span>
+            </button>
+
+            {% if user.is_authenticated %}
+            <a href="{% url 'logout' %}" class="btn-logout" data-nav-link>
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn-logout" data-nav-link>
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Login</span>
+            </a>
+            {% endif %}
+        </div>
     </div>
-    
 </div>

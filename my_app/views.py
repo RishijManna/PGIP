@@ -4,12 +4,14 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.core.mail import send_mail
+from django.core.management import call_command
 from django.http import JsonResponse
 from django.db.models import F
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from datetime import datetime
 from calendar import monthrange
+from io import StringIO
 import random
 import json
 from .forms import UserForm, UserProfileForm
@@ -23,6 +25,21 @@ DUMMY_SCHEMES = [f"Scheme {i}" for i in range(1,83)]
 DUMMY_JOBS = [f"Job {i}" for i in range(1,51)]
 
 # Helper function to create calendar reminders
+def ensure_source_backed_records():
+    if (
+        Exam.objects.exists()
+        and Scheme.objects.exists()
+        and JobOpportunity.objects.exists()
+    ):
+        return
+
+    call_command(
+        "sync_real_opportunities",
+        verbosity=0,
+        stdout=StringIO(),
+    )
+
+
 def create_calendar_reminder(user, title, date):
     """
     Helper function to create calendar reminders
@@ -35,6 +52,8 @@ def create_calendar_reminder(user, title, date):
 
 # Dashboard
 def dashboard(request):
+    ensure_source_backed_records()
+
     schemes = Scheme.objects.all()
     exams = Exam.objects.all()
     jobs = JobOpportunity.objects.all()
@@ -116,6 +135,8 @@ def dashboard(request):
 
 # Search Feature
 def search_results(request):
+    ensure_source_backed_records()
+
     query = request.GET.get('q', '')
     exams = Exam.objects.none()
     schemes = Scheme.objects.none()
@@ -598,6 +619,7 @@ from .services.ai_assistant import answer_question
 
 @login_required
 def recommendations_view(request):
+    ensure_source_backed_records()
 
     profile, _ = UserProfile.objects.get_or_create(
         user=request.user
@@ -670,6 +692,8 @@ def recommendations_view(request):
 
 @login_required
 def ai_assistant_view(request):
+    ensure_source_backed_records()
+
     profile, _ = UserProfile.objects.get_or_create(
         user=request.user
     )
@@ -702,6 +726,8 @@ def ai_assistant_view(request):
 @login_required
 @require_POST
 def ai_assistant_api(request):
+    ensure_source_backed_records()
+
     try:
         payload = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:

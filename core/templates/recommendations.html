@@ -7,337 +7,246 @@ Personalized Recommendations
 {% endblock %}
 
 {% block extra_css %}
-
-
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
 {% endblock %}
 
 {% block content %}
-
 <div class="container">
 
-    <!-- Header -->
-
     <div class="recom-header">
-
         <h1>
             <i class="fas fa-lightbulb"></i>
             Personalized Recommendations
         </h1>
 
         <p>
-            AI-ranked using your profile, interests,
-            eligibility, location, and opportunity details
+            AI-ranked using your profile, interests, eligibility, location, and opportunity details
         </p>
 
+        <div class="recom-status">
+            <span class="ai-score">
+                Source-backed opportunities load automatically
+            </span>
+        </div>
+
         {% if interests %}
-
         <div class="interests-tags">
-
             <span>
                 Your interests:
             </span>
 
             {% for interest in interests %}
-
             <span class="interest-tag">
-
                 {{ interest }}
-
             </span>
-
             {% endfor %}
-
         </div>
-
         {% endif %}
-
     </div>
 
-
-    <!-- Recommendations Grid -->
-
     <div class="recom-grid">
-
-        <!-- Exams -->
-
         <div class="recom-card">
-
             <div class="card-header">
-
                 <i class="fas fa-file-alt"></i>
-
                 <h2>
                     Recommended Exams
                 </h2>
-
             </div>
 
             <div class="card-body">
-
                 {% if exams %}
-
                 {% for exam in exams %}
-
                 <div class="recommendation-item">
-
                     <div class="recom-icon">
-
                         <i class="fas fa-graduation-cap"></i>
-
                     </div>
 
                     <div class="recom-details">
-
                         <h3>
-
                             {{ exam.name }}
-
                         </h3>
 
                         <p>
-
                             {{ exam.category }}
-
                         </p>
 
                         <div class="ai-match">
-
                             <span class="ai-score">
                                 {{ exam.ai_score }}% match
                             </span>
 
                             {% for reason in exam.ai_reasons %}
-
                             <span class="ai-reason">
                                 {{ reason }}
                             </span>
-
                             {% endfor %}
-
                         </div>
 
                         <div class="mini-ai-explanation">
                             <strong>
-                                {{ exam.ai_explanation.verdict }} · {{ exam.ai_explanation.confidence }}%
+                                {{ exam.ai_explanation.verdict }} - {{ exam.ai_explanation.confidence }}%
                             </strong>
                             <span>
                                 {{ exam.ai_explanation.matching_factors.0 }}
                             </span>
                         </div>
-
                     </div>
 
                     <div class="recom-actions">
-
-                        <a href="{% url 'details' 'exam' exam.id %}"
-                           class="btn-more">
-
+                        <a href="{% url 'details' 'exam' exam.id %}" class="btn-more">
                             View Details
-
                         </a>
-
                     </div>
-
                 </div>
-
                 {% endfor %}
-
                 {% else %}
-
-                <p>
-                    No exam recommendations found.
-                </p>
-
+                <div class="empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <p>
+                        No exam recommendations found yet.
+                    </p>
+                </div>
                 {% endif %}
-
             </div>
-
         </div>
 
-
-        <!-- Schemes -->
-
         <div class="recom-card">
-
             <div class="card-header">
-
                 <i class="fas fa-hand-holding-usd"></i>
-
                 <h2>
                     Recommended Schemes
                 </h2>
-
             </div>
 
             <div class="card-body">
-
                 {% if schemes %}
-
                 {% for scheme in schemes %}
-
                 <div class="recommendation-item">
-
                     <div class="recom-icon">
-
                         <i class="fas fa-hand-holding-heart"></i>
-
                     </div>
 
                     <div class="recom-details">
-
                         <h3>
-
                             {{ scheme.name }}
-
                         </h3>
 
                         <p>
-
                             {{ scheme.category }}
-
                         </p>
 
                         <div class="ai-match">
-
                             <span class="ai-score">
                                 {{ scheme.ai_score }}% match
                             </span>
 
                             {% for reason in scheme.ai_reasons %}
-
                             <span class="ai-reason">
                                 {{ reason }}
                             </span>
-
                             {% endfor %}
-
                         </div>
 
                         <div class="mini-ai-explanation">
                             <strong>
-                                {{ scheme.ai_explanation.verdict }} · {{ scheme.ai_explanation.confidence }}%
+                                {{ scheme.ai_explanation.verdict }} - {{ scheme.ai_explanation.confidence }}%
                             </strong>
                             <span>
                                 {{ scheme.ai_explanation.matching_factors.0 }}
                             </span>
                         </div>
-
                     </div>
 
                     <div class="recom-actions">
-
-                        <a href="{% url 'details' 'scheme' scheme.id %}"
-                           class="btn-more">
-
+                        <a href="{% url 'details' 'scheme' scheme.id %}" class="btn-more">
                             View Details
-
                         </a>
-
                     </div>
-
                 </div>
-
                 {% endfor %}
-
                 {% else %}
-
-                <p>
-                    No scheme recommendations found.
-                </p>
-
+                <div class="empty-state">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    <p>
+                        No scheme recommendations found yet.
+                    </p>
+                </div>
                 {% endif %}
+            </div>
+        </div>
 
+        <div class="recom-card recom-card--full">
+            <div class="card-header">
+                <i class="fas fa-briefcase"></i>
+                <h2>
+                    Recommended Jobs & Off-Campus Opportunities
+                </h2>
             </div>
 
-        </div>
-
-    </div>
-
-    <div class="recom-card" style="margin-top: 2rem;">
-
-        <div class="card-header">
-
-            <i class="fas fa-briefcase"></i>
-
-            <h2>
-                Recommended Jobs & Off-Campus Opportunities
-            </h2>
-
-        </div>
-
-        <div class="card-body">
-
-            {% if jobs %}
-
-            {% for job in jobs %}
-
-            <div class="recommendation-item">
-
-                <div class="recom-icon">
-                    <i class="fas fa-building"></i>
-                </div>
-
-                <div class="recom-details">
-                    <h3>{{ job.title }}</h3>
-                    <p>{{ job.company_or_org|default:job.source_name }} - {{ job.sector|default:"General" }}</p>
-
-                    <div class="ai-match">
-                        <span class="ai-reason">
-                            {{ job.compensation_summary }}
-                        </span>
-                        <span class="ai-reason">
-                            Registration: {{ job.registration_window }}
-                        </span>
+            <div class="card-body">
+                {% if jobs %}
+                {% for job in jobs %}
+                <div class="recommendation-item">
+                    <div class="recom-icon">
+                        <i class="fas fa-building"></i>
                     </div>
 
-                    <div class="ai-match">
-                        <span class="ai-score">
-                            {{ job.ai_score }}% match
-                        </span>
+                    <div class="recom-details">
+                        <h3>{{ job.title }}</h3>
+                        <p>{{ job.company_or_org|default:job.source_name }} - {{ job.sector|default:"General" }}</p>
 
-                        {% for reason in job.ai_reasons %}
-                        <span class="ai-reason">
-                            {{ reason }}
-                        </span>
-                        {% endfor %}
+                        <div class="ai-match">
+                            <span class="ai-reason">
+                                {{ job.compensation_summary }}
+                            </span>
+                            <span class="ai-reason">
+                                Registration: {{ job.registration_window }}
+                            </span>
+                        </div>
+
+                        <div class="ai-match">
+                            <span class="ai-score">
+                                {{ job.ai_score }}% match
+                            </span>
+
+                            {% for reason in job.ai_reasons %}
+                            <span class="ai-reason">
+                                {{ reason }}
+                            </span>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mini-ai-explanation">
+                            <strong>
+                                {{ job.ai_explanation.verdict }} - {{ job.ai_explanation.confidence }}%
+                            </strong>
+                            <span>
+                                {{ job.ai_explanation.matching_factors.0 }}
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="mini-ai-explanation">
-                        <strong>
-                            {{ job.ai_explanation.verdict }} - {{ job.ai_explanation.confidence }}%
-                        </strong>
-                        <span>
-                            {{ job.ai_explanation.matching_factors.0 }}
-                        </span>
+                    <div class="recom-actions">
+                        <a href="{% url 'details' 'job' job.id %}" class="btn-more">
+                            View Details
+                        </a>
                     </div>
                 </div>
-
-                <div class="recom-actions">
-                    <a href="{% url 'details' 'job' job.id %}" class="btn-more">
-                        View Details
+                {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-briefcase"></i>
+                    <p>
+                        We could not find a strong match yet. Update your profile skills, interests, location, and education details, then check again.
+                    </p>
+                    <a href="{% url 'profile' %}" class="btn-more">
+                        Update Profile
                     </a>
                 </div>
-
+                {% endif %}
             </div>
-
-            {% endfor %}
-
-            {% else %}
-
-            <p>
-                No job recommendations found. Add skills and marks in your profile, then run the real-opportunity sync.
-            </p>
-
-            {% endif %}
-
         </div>
-
     </div>
 
 </div>
-
-
 {% endblock %}

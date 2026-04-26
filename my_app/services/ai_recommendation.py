@@ -1,3 +1,4 @@
+import re
 from datetime import date
 
 try:
@@ -48,13 +49,20 @@ def safe_split(text):
 
     return [
         item.strip()
-        for item in str(text).replace("\n", ",").split(",")
+        for item in re.split(r"[,;\n|/]+", str(text))
         if item.strip()
     ]
 
 
 def normalize(text):
     return str(text or "").strip().lower()
+
+
+def keyword_tokens(text):
+    return {
+        token
+        for token in re.findall(r"[a-z0-9+#.]{2,}", normalize(text))
+    }
 
 
 def contains_match(left, right):
@@ -214,21 +222,30 @@ def job_skill_and_marks_boost(profile, job):
     score = 0.0
     reasons = []
 
-    profile_skills = {
+    profile_skill_phrases = {
         normalize(skill)
         for skill in safe_split(getattr(profile, "skills", ""))
     }
-    required_skills = {
+    required_skill_phrases = {
         normalize(skill)
         for skill in safe_split(getattr(job, "required_skills", ""))
     }
+    profile_skill_tokens = keyword_tokens(getattr(profile, "skills", ""))
+    required_skill_tokens = keyword_tokens(getattr(job, "required_skills", ""))
 
-    if profile_skills and required_skills:
-        overlap = profile_skills & required_skills
+    overlap = profile_skill_phrases & required_skill_phrases
 
-        if overlap:
-            score += min(0.20, 0.06 * len(overlap))
-            reasons.append("skill match: " + ", ".join(sorted(overlap)[:3]))
+    if overlap:
+        score += min(0.20, 0.06 * len(overlap))
+        reasons.append("skill match: " + ", ".join(sorted(overlap)[:3]))
+    elif profile_skill_tokens and required_skill_tokens:
+        token_overlap = profile_skill_tokens & required_skill_tokens
+
+        if token_overlap:
+            score += min(0.16, 0.035 * len(token_overlap))
+            reasons.append(
+                "skill overlap: " + ", ".join(sorted(token_overlap)[:4])
+            )
 
     if marks_meet_requirement(
         profile.class_10_percentage,
@@ -591,4 +608,36 @@ def recommend_schemes(profile, schemes):
 
 
 def recommend_jobs(profile, jobs):
-    return rank_items(profile, jobs, job_to_document, "job")
+    ranked_jobs = rank_items(profile, jobs, job_to_document, "job")
+
+    if ranked_jobs:
+        return ranked_jobs
+
+    fallback_jobs = []
+
+    for job in jobs:
+        boost, reasons = calculate_signal_boosts(profile, job, "job")
+        score = boost
+
+        if getattr(job, "is_live_source", False):
+            score += 0.02
+            reasons.append("verified source")
+
+        if normalize(getattr(job, "opportunity_type", "")) in {
+            "career_portal",
+            "it_offcampus",
+            "internship",
+            "apprenticeship",
+        }:
+            score += 0.02
+            reasons.append("active opportunity channel")
+
+        fallback_jobs.append(
+            (
+                job,
+                max(score, 0.03),
+                reasons or ["source-backed opportunity"],
+            )
+        )
+
+    return finalize_ranked_items(fallback_jobs)

@@ -199,6 +199,38 @@ class AiRecommendationTests(TestCase):
             any("skill match" in reason for reason in recommendations[0].ai_reasons)
         )
 
+    def test_job_recommendation_falls_back_to_live_source_jobs(self):
+        blank_user = User.objects.create_user(
+            username="blank-profile@example.com",
+            email="blank-profile@example.com",
+        )
+        blank_profile = UserProfile.objects.create(user=blank_user)
+        job = JobOpportunity.objects.create(
+            title="General Careers Portal",
+            company_or_org="Example Source",
+            opportunity_type="career_portal",
+            sector="Employment",
+            location="Unknown Region",
+            qualification="Varies",
+            source_name="Example Source",
+            source_url="https://example.com/jobs",
+            is_live_source=True,
+        )
+
+        recommendations = recommend_jobs(
+            blank_profile,
+            JobOpportunity.objects.all(),
+        )
+
+        self.assertIn(job, recommendations)
+        self.assertGreater(recommendations[0].ai_score, 0)
+        self.assertTrue(
+            any(
+                reason in recommendations[0].ai_reasons
+                for reason in ["verified source", "active opportunity channel"]
+            )
+        )
+
     def test_calendar_api_includes_dated_job_opportunities(self):
         job = JobOpportunity.objects.create(
             title="DRDO Apprentice Example",
@@ -280,3 +312,12 @@ class AiRecommendationTests(TestCase):
         self.assertGreaterEqual(Exam.objects.filter(is_live_source=True).count(), 7)
         self.assertGreaterEqual(Scheme.objects.filter(is_live_source=True).count(), 3)
         self.assertGreaterEqual(JobOpportunity.objects.filter(is_live_source=True).count(), 13)
+
+    def test_recommendations_view_bootstraps_source_backed_records(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get("/recommendations/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recommended Jobs")
+        self.assertGreater(JobOpportunity.objects.count(), 0)
