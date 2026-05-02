@@ -52,13 +52,13 @@ PGIP AI Assistant
 
             <form class="ai-chat-form" id="aiChatForm">
                 {% csrf_token %}
-                <input
-                    type="text"
+                <textarea
                     id="aiQuestion"
                     name="message"
-                    placeholder="Ask about schemes, exams, deadlines, eligibility..."
+                    placeholder="Ask about jobs, schemes, exams, documents, comparisons, or a step-by-step plan..."
                     autocomplete="off"
-                    required>
+                    rows="1"
+                    required></textarea>
                 <button type="submit">
                     <i class="fas fa-paper-plane"></i>
                     Send

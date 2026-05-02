@@ -2,9 +2,10 @@ from datetime import date
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
-from .models import Exam, JobOpportunity, Scheme, Task, UserProfile
+from .models import Document, Exam, JobOpportunity, Scheme, Task, UserProfile
 from .services.ai_assistant import answer_question
 from .services.ai_recommendation import (
     build_eligibility_explanation,
@@ -12,6 +13,7 @@ from .services.ai_recommendation import (
     recommend_jobs,
     recommend_schemes,
 )
+from .services.seed_rag import build_seed_rag_index, retrieve_from_seed_rag
 
 
 class AiRecommendationTests(TestCase):
@@ -445,11 +447,138 @@ class AiRecommendationTests(TestCase):
         self.assertGreaterEqual(Scheme.objects.filter(is_live_source=True).count(), 3)
         self.assertGreaterEqual(JobOpportunity.objects.filter(is_live_source=True).count(), 13)
 
-    def test_recommendations_view_bootstraps_source_backed_records(self):
+    def test_recommendations_view_does_not_sync_records_during_request(self):
         self.client.force_login(self.user)
 
         response = self.client.get("/recommendations/")
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Recommended Jobs")
-        self.assertGreater(JobOpportunity.objects.count(), 0)
+        self.assertEqual(JobOpportunity.objects.count(), 0)
+
+    def test_calendar_post_delete_scopes_task_to_logged_in_user(self):
+        other_user = User.objects.create_user(
+            username="other@example.com",
+            email="other@example.com",
+        )
+        other_task = Task.objects.create(
+            user=other_user,
+            title="Other user task",
+            date=date(2030, 1, 1),
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/calendar/",
+            {"delete": "1", "task_id": other_task.id},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Task.objects.filter(id=other_task.id).exists())
+
+    def test_reminder_json_endpoints_require_login_and_csrf(self):
+        response = self.client.post(
+            "/add-reminder/",
+            data='{"title": "Apply", "date": "2030-01-01"}',
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_delete_reminder_requires_owner(self):
+        other_user = User.objects.create_user(
+            username="owner@example.com",
+            email="owner@example.com",
+        )
+        other_task = Task.objects.create(
+            user=other_user,
+            title="Owned task",
+            date=date(2030, 1, 1),
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.delete(f"/delete-reminder/{other_task.id}/")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Task.objects.filter(id=other_task.id).exists())
+
+    def test_document_upload_rejects_unsupported_file_type(self):
+        self.client.force_login(self.user)
+        response = self.client.post(
+            "/profile/",
+            {
+                "upload_document": "1",
+                "name": "Script",
+                "category": "General",
+                "file": SimpleUploadedFile(
+                    "script.exe",
+                    b"not allowed",
+                    content_type="application/octet-stream",
+                ),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Document.objects.filter(user=self.user).exists())
+
+    def test_search_active_filter_excludes_expired_jobs(self):
+        active_job = JobOpportunity.objects.create(
+            title="Active Django Job",
+            company_or_org="Example",
+            sector="Information Technology",
+            location="All India",
+            registration_end_date=date(2030, 1, 1),
+        )
+        JobOpportunity.objects.create(
+            title="Expired Django Job",
+            company_or_org="Example",
+            sector="Information Technology",
+            location="All India",
+            registration_end_date=date(2020, 1, 1),
+        )
+
+        response = self.client.get("/search/?q=Django&active=1")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, active_job.title)
+        self.assertNotContains(response, "Expired Django Job")
+
+    def test_seed_data_adds_large_job_and_scheme_corpus(self):
+        call_command("seed_data", verbosity=0)
+
+        self.assertGreaterEqual(
+            JobOpportunity.objects.filter(source_name="PGIP Seed Dataset").count(),
+            260,
+        )
+        self.assertGreaterEqual(
+            Scheme.objects.filter(source_name="PGIP Seed Dataset").count(),
+            260,
+        )
+
+    def test_seed_rag_index_retrieves_seeded_jobs(self):
+        call_command("seed_data", verbosity=0)
+        stats = build_seed_rag_index()
+        results = retrieve_from_seed_rag(
+            self.profile,
+            "Python Django SQL fresher job",
+            focus="job",
+            limit=3,
+        )
+
+        self.assertGreaterEqual(stats["jobs"], 260)
+        self.assertTrue(results)
+        self.assertTrue(all(item_type == "job" for item_type, _ in results))
+
+    def test_ai_assistant_uses_seed_rag_index_when_available(self):
+        call_command("seed_data", verbosity=0)
+        build_seed_rag_index()
+
+        result = answer_question(
+            self.profile,
+            "Which Python Django SQL jobs match me?",
+            Exam.objects.all(),
+            Scheme.objects.all(),
+            JobOpportunity.objects.all(),
+        )
+
+        self.assertTrue(result["items"])
+        self.assertTrue(any(item["type"] == "job" for item in result["items"]))

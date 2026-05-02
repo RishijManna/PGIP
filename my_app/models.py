@@ -1,7 +1,38 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.utils.text import get_valid_filename
 from django.utils import timezone
 from datetime import timedelta
+import os
+import uuid
+
+
+MAX_DOCUMENT_SIZE = 5 * 1024 * 1024
+ALLOWED_DOCUMENT_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "doc", "docx"]
+ALLOWED_DOCUMENT_CONTENT_TYPES = {
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+def document_upload_path(instance, filename):
+    base, ext = os.path.splitext(get_valid_filename(filename))
+    safe_base = base[:50] or "document"
+    return f"documents/user_{instance.user_id}/{safe_base}-{uuid.uuid4().hex[:12]}{ext.lower()}"
+
+
+def validate_document_file(file_obj):
+    if file_obj.size > MAX_DOCUMENT_SIZE:
+        raise ValidationError("Document files must be 5 MB or smaller.")
+
+    content_type = getattr(file_obj, "content_type", "")
+    if content_type and content_type not in ALLOWED_DOCUMENT_CONTENT_TYPES:
+        raise ValidationError("Unsupported document type.")
 
 
 class OTP(models.Model):
@@ -306,10 +337,25 @@ class Document(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     category = models.CharField(max_length=100, blank=True, null=True)
-    file = models.FileField(upload_to='documents/')
+    file = models.FileField(
+        upload_to=document_upload_path,
+        validators=[
+            FileExtensionValidator(allowed_extensions=ALLOWED_DOCUMENT_EXTENSIONS),
+            validate_document_file,
+        ],
+    )
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        super().clean()
+        if self.file:
+            validate_document_file(self.file)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 # -------------------- USER PROFILE --------------------

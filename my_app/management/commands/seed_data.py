@@ -1,10 +1,210 @@
 from django.core.management.base import BaseCommand
-from my_app.models import Exam, Scheme
+from django.utils import timezone
+
+from my_app.models import Exam, JobOpportunity, Scheme
 from datetime import date, timedelta
 
 
+SCHEME_BLUEPRINTS = [
+    ("Education", "Scholarship", "12th Pass", "tuition fee support, mentoring, and exam preparation assistance", "marksheets, income certificate, Aadhaar, bank details"),
+    ("Education", "Training", "Graduate", "industry training, certification fee support, and placement assistance", "degree certificate, resume, Aadhaar, bank details"),
+    ("Employment", "Training", "Graduate, Unemployed", "skill training, interview preparation, and job placement support", "education certificate, employment registration, resume"),
+    ("Finance", "Loan", "Low Income", "interest subsidy, credit support, and repayment guidance", "income certificate, bank statement, project estimate"),
+    ("Entrepreneurship", "Financial Assistance", "18+ years", "seed grant, incubation access, and business mentorship", "startup registration, project report, bank details"),
+    ("Health", "Insurance", "Open to All", "cashless treatment support and preventive health benefits", "Aadhaar, family ID, income proof where applicable"),
+    ("Housing", "Subsidy", "Low Income", "construction subsidy, loan interest support, and technical assistance", "income certificate, land or tenancy proof, bank details"),
+    ("Welfare", "Financial Assistance", "BPL Families", "direct benefit transfer and emergency support", "income certificate, Aadhaar, bank details"),
+    ("Pension", "Pension", "Senior Citizens", "monthly pension and assisted service access", "age proof, Aadhaar, bank details"),
+    ("Insurance", "Insurance", "Farmers", "risk coverage and claim support for livelihood shocks", "land record, Aadhaar, bank details"),
+]
+
+SCHEME_LOCATIONS = [
+    "All India",
+    "Delhi",
+    "Karnataka",
+    "West Bengal",
+    "Tamil Nadu",
+    "Maharashtra",
+    "Telangana",
+    "Andhra Pradesh",
+    "Odisha",
+    "Gujarat",
+    "Chhattisgarh",
+    "Madhya Pradesh",
+    "Uttarakhand",
+    "Kerala",
+    "Rural India",
+]
+
+SCHEME_AUDIENCES = [
+    "students",
+    "women applicants",
+    "rural youth",
+    "first-generation graduates",
+    "low-income families",
+    "small entrepreneurs",
+    "farmers",
+    "senior citizens",
+    "job seekers",
+    "technical graduates",
+    "diploma holders",
+    "self-help groups",
+    "minority students",
+]
+
+JOB_BLUEPRINTS = [
+    ("Junior Django Developer", "private_job", "Information Technology", "Graduate", "Python, Django, SQL, REST APIs, Git", "ctc", "Rs. 3.6 LPA to Rs. 6 LPA"),
+    ("Data Analyst Trainee", "private_job", "Analytics", "Graduate", "Excel, SQL, Python, Power BI, statistics", "ctc", "Rs. 3 LPA to Rs. 5.5 LPA"),
+    ("Cloud Support Associate", "it_offcampus", "Cloud Computing", "Graduate", "Linux, networking, AWS basics, troubleshooting", "ctc", "Rs. 4 LPA to Rs. 7 LPA"),
+    ("Cybersecurity Intern", "internship", "Cybersecurity", "Undergraduate or Graduate", "network security, Linux, Python, OWASP basics", "stipend", "Rs. 12,000 to Rs. 25,000 per month"),
+    ("Frontend Engineer Fresher", "it_offcampus", "Information Technology", "Graduate", "HTML, CSS, JavaScript, React, Git", "ctc", "Rs. 3.5 LPA to Rs. 6.5 LPA"),
+    ("Banking Operations Associate", "private_job", "Banking", "Graduate", "customer service, Excel, banking operations, communication", "salary", "Rs. 22,000 to Rs. 35,000 per month"),
+    ("Government Apprenticeship Assistant", "apprenticeship", "Public Sector", "Diploma or Graduate", "documentation, office tools, communication, domain basics", "stipend", "Rs. 9,000 to Rs. 15,000 per month"),
+    ("Graduate Engineer Trainee", "private_job", "Engineering", "Graduate", "engineering fundamentals, AutoCAD, problem solving, safety", "ctc", "Rs. 3 LPA to Rs. 5 LPA"),
+    ("Digital Marketing Associate", "private_job", "Marketing", "Graduate", "SEO, content writing, analytics, social media, Canva", "salary", "Rs. 20,000 to Rs. 32,000 per month"),
+    ("HR Operations Intern", "internship", "Human Resources", "Graduate", "MS Excel, communication, sourcing, HR operations", "stipend", "Rs. 8,000 to Rs. 18,000 per month"),
+    ("Business Development Executive", "private_job", "Sales", "Graduate", "communication, CRM, lead generation, negotiation", "ctc", "Rs. 2.8 LPA to Rs. 5 LPA"),
+    ("QA Automation Fresher", "it_offcampus", "Information Technology", "Graduate", "manual testing, Selenium, Python or Java, SQL", "ctc", "Rs. 3.2 LPA to Rs. 5.8 LPA"),
+    ("Field Coordinator", "private_job", "Social Impact", "Graduate", "field surveys, reporting, local language, Excel", "salary", "Rs. 18,000 to Rs. 30,000 per month"),
+]
+
+JOB_LOCATIONS = [
+    "All India",
+    "Delhi",
+    "Bengaluru",
+    "Hyderabad",
+    "Mumbai",
+    "Pune",
+    "Kolkata",
+    "Chennai",
+    "Ahmedabad",
+    "Gurugram",
+    "Noida",
+    "Rural India",
+]
+
+JOB_ORGANIZATIONS = [
+    "Aarohan Digital",
+    "Bharat Career Labs",
+    "NexGen Skills",
+    "CivicTech Solutions",
+    "Pragati Analytics",
+    "SkillBridge India",
+    "Eastern Talent Network",
+    "Nova Public Services",
+    "GreenGrid Careers",
+    "EduRise Foundation",
+    "FinEdge Services",
+    "HealthLink Operations",
+]
+
+
+def build_generated_schemes(start_date, count=260):
+    schemes = []
+
+    for index in range(1, count + 1):
+        category, scheme_type, eligibility, benefit, documents = SCHEME_BLUEPRINTS[
+            (index - 1) % len(SCHEME_BLUEPRINTS)
+        ]
+        location = SCHEME_LOCATIONS[(index - 1) % len(SCHEME_LOCATIONS)]
+        audience = SCHEME_AUDIENCES[(index - 1) % len(SCHEME_AUDIENCES)]
+        close_date = start_date + timedelta(days=20 + index)
+
+        schemes.append(
+            {
+                "name": f"PGIP {location} {category} Support Scheme {index:03d}",
+                "category": category,
+                "scheme_type": scheme_type,
+                "description": (
+                    f"Source-backed demo scheme for {audience} focused on "
+                    f"{category.lower()} support in {location}."
+                ),
+                "s_eligibility": eligibility,
+                "benefits": benefit,
+                "benefit_amount": f"Benefit support up to Rs. {10000 + (index % 20) * 5000}",
+                "required_documents": documents,
+                "location": location,
+                "date": close_date,
+                "registration_start_date": start_date + timedelta(days=index % 15),
+                "registration_end_date": close_date,
+                "source_name": "PGIP Seed Dataset",
+                "source_url": "https://example.com/pgip-seed-schemes",
+                "application_url": "https://example.com/pgip-apply",
+                "is_live_source": False,
+                "data_as_of": start_date,
+                "verification_notes": (
+                    "Generated local seed record for search, recommendation, and RAG testing. "
+                    "Replace with official source data before production use."
+                ),
+                "additional_info": (
+                    f"Applicants should verify final eligibility, document rules, and deadlines. "
+                    f"This record helps test matching for {audience}, {eligibility}, and {location}."
+                ),
+            }
+        )
+
+    return schemes
+
+
+def build_generated_jobs(start_date, count=260):
+    jobs = []
+
+    for index in range(1, count + 1):
+        (
+            title,
+            opportunity_type,
+            sector,
+            qualification,
+            skills,
+            compensation_type,
+            compensation,
+        ) = JOB_BLUEPRINTS[(index - 1) % len(JOB_BLUEPRINTS)]
+        location = JOB_LOCATIONS[(index - 1) % len(JOB_LOCATIONS)]
+        organization = JOB_ORGANIZATIONS[(index - 1) % len(JOB_ORGANIZATIONS)]
+        close_date = start_date + timedelta(days=15 + index)
+
+        jobs.append(
+            {
+                "title": f"{title} - {organization} {index:03d}",
+                "company_or_org": organization,
+                "opportunity_type": opportunity_type,
+                "sector": sector,
+                "location": location,
+                "qualification": qualification,
+                "required_skills": skills,
+                "min_10th_percentage": 50 + (index % 5) * 5,
+                "min_12th_percentage": 50 + (index % 6) * 5,
+                "min_cgpa": 6.0 + ((index % 5) * 0.25),
+                "salary_or_stipend": compensation,
+                "compensation_type": compensation_type,
+                "compensation": compensation,
+                "registration_start_date": start_date + timedelta(days=index % 20),
+                "registration_end_date": close_date,
+                "deadline": close_date,
+                "description": (
+                    f"Seeded real-life style opportunity for {qualification} candidates "
+                    f"in {sector}. The role emphasizes {skills} and is suitable for "
+                    "recommendation, search, calendar, and RAG assistant testing."
+                ),
+                "source_name": "PGIP Seed Dataset",
+                "source_url": "https://example.com/pgip-seed-jobs",
+                "official_notification_url": "https://example.com/pgip-seed-job-notification",
+                "application_url": "https://example.com/pgip-job-apply",
+                "is_live_source": False,
+                "data_as_of": start_date,
+                "verification_notes": (
+                    "Generated local seed record for development/testing. "
+                    "Use official employer links before showing as verified production data."
+                ),
+                "last_synced_at": timezone.now(),
+            }
+        )
+
+    return jobs
+
+
 class Command(BaseCommand):
-    help = "Seed the database with initial Exam and Scheme data"
+    help = "Seed the database with Exam, Scheme, and JobOpportunity data"
 
     def handle(self, *args, **kwargs):
         # -------- Exams --------
@@ -833,14 +1033,17 @@ class Command(BaseCommand):
                 }
             ]
 
+        exam_created_count = 0
+        exam_updated_count = 0
+
         for exam_data in exams:
             exam, created = Exam.objects.update_or_create(
                 name=exam_data["name"], defaults=exam_data
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f"✅ Exam created: {exam.name}"))
+                exam_created_count += 1
             else:
-                self.stdout.write(self.style.SUCCESS(f"🔄 Exam updated: {exam.name}"))
+                exam_updated_count += 1
 
         # -------- Schemes --------
         schemes = [
@@ -1396,11 +1599,44 @@ class Command(BaseCommand):
             }
         ]
 
+        generated_schemes = build_generated_schemes(date(2026, 1, 1), count=260)
+        schemes.extend(generated_schemes)
+
+        scheme_created_count = 0
+        scheme_updated_count = 0
+
         for scheme_data in schemes:
             scheme, created = Scheme.objects.update_or_create(
                 name=scheme_data["name"], defaults=scheme_data
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f"✅ Scheme created: {scheme.name}"))
+                scheme_created_count += 1
             else:
-                self.stdout.write(self.style.SUCCESS(f"🔄 Scheme updated: {scheme.name}"))
+                scheme_updated_count += 1
+
+        jobs = build_generated_jobs(date(2026, 1, 1), count=260)
+        job_created_count = 0
+        job_updated_count = 0
+
+        for job_data in jobs:
+            job, created = JobOpportunity.objects.update_or_create(
+                title=job_data["title"],
+                defaults=job_data,
+            )
+            if created:
+                job_created_count += 1
+            else:
+                job_updated_count += 1
+
+        if kwargs.get("verbosity", 1) > 0:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Seed complete: "
+                    f"{exam_created_count} exams created, "
+                    f"{exam_updated_count} exams updated, "
+                    f"{scheme_created_count} schemes created, "
+                    f"{scheme_updated_count} schemes updated, "
+                    f"{job_created_count} jobs created, "
+                    f"{job_updated_count} jobs updated."
+                )
+            )

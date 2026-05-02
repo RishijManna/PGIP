@@ -1,6 +1,12 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Task, UserProfile, Document
+from .models import (
+    ALLOWED_DOCUMENT_EXTENSIONS,
+    MAX_DOCUMENT_SIZE,
+    Task,
+    UserProfile,
+    Document,
+)
 
 
 # ----------------- Extra Forms -----------------
@@ -39,6 +45,20 @@ class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
         fields = ['name', 'category', 'file']
+
+    def clean_file(self):
+        uploaded = self.cleaned_data["file"]
+        extension = uploaded.name.rsplit(".", 1)[-1].lower()
+
+        if extension not in ALLOWED_DOCUMENT_EXTENSIONS:
+            raise forms.ValidationError(
+                "Upload a PDF, Word document, JPG, or PNG file."
+            )
+
+        if uploaded.size > MAX_DOCUMENT_SIZE:
+            raise forms.ValidationError("Document files must be 5 MB or smaller.")
+
+        return uploaded
 
 
 # ----------------- Choice Lists -----------------

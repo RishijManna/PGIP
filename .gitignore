@@ -8,6 +8,7 @@ INSTRUCTIONS
 .env
 .venv/
 *.log
+rag_indexes/
 
 # VSCode
 .vscode/

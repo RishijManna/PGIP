@@ -34,6 +34,13 @@ Verify OTP
         
         <div class="otp-footer">
             <p>Didn't receive the code?</p>
+            <form method="post" action="{% url 'resend_otp' %}">
+                {% csrf_token %}
+                <button type="submit" class="resend-link otp-resend-button">
+                    <i class="fas fa-rotate-right"></i>
+                    Resend OTP
+                </button>
+            </form>
             <a href="{% url 'login' %}" class="resend-link">
                 <i class="fas fa-arrow-left"></i>
                 Back to Login
@@ -213,6 +220,13 @@ Verify OTP
         font-weight: 600;
         font-size: 0.95rem;
         transition: all 0.3s ease;
+    }
+
+    .otp-resend-button {
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        margin-bottom: 0.75rem;
     }
 
     .resend-link:hover {

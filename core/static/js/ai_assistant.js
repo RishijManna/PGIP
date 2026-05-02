@@ -23,8 +23,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const label = document.createElement("strong");
         label.textContent = role === "user" ? "You" : "PGIP AI";
 
-        const body = document.createElement("p");
-        body.textContent = text;
+        const body = document.createElement("div");
+        body.className = "chat-content";
+        renderMessage(body, text);
 
         bubble.appendChild(label);
         bubble.appendChild(body);
@@ -32,6 +33,54 @@ document.addEventListener("DOMContentLoaded", function () {
         messages.scrollTop = messages.scrollHeight;
 
         return bubble;
+    }
+
+    function renderMessage(container, text) {
+        container.innerHTML = "";
+        const lines = String(text || "").split(/\n/);
+        let list = null;
+
+        lines.forEach(function (line) {
+            const trimmed = line.trim();
+
+            if (!trimmed) {
+                list = null;
+                container.appendChild(document.createElement("br"));
+                return;
+            }
+
+            if (trimmed.startsWith("- ")) {
+                if (!list) {
+                    list = document.createElement("ul");
+                    container.appendChild(list);
+                }
+                const li = document.createElement("li");
+                li.textContent = trimmed.slice(2);
+                list.appendChild(li);
+                return;
+            }
+
+            list = null;
+
+            if (/^\d+\.\s/.test(trimmed)) {
+                const item = document.createElement("p");
+                item.className = "chat-numbered-line";
+                item.textContent = trimmed;
+                container.appendChild(item);
+                return;
+            }
+
+            if (trimmed.endsWith(":") && trimmed.length < 80) {
+                const heading = document.createElement("h4");
+                heading.textContent = trimmed.slice(0, -1);
+                container.appendChild(heading);
+                return;
+            }
+
+            const paragraph = document.createElement("p");
+            paragraph.textContent = trimmed;
+            container.appendChild(paragraph);
+        });
     }
 
     function renderSources(items) {
@@ -55,9 +104,13 @@ document.addEventListener("DOMContentLoaded", function () {
             const meta = document.createElement("small");
             meta.textContent = `${item.category} - ${item.location} - ${item.date}`;
 
+            const source = document.createElement("small");
+            source.textContent = `${item.source_name || "Portal record"} - ${item.freshness_note || "Verify before applying"}`;
+
             card.appendChild(type);
             card.appendChild(title);
             card.appendChild(meta);
+            card.appendChild(source);
             sources.appendChild(card);
         });
     }
@@ -86,15 +139,21 @@ document.addEventListener("DOMContentLoaded", function () {
                 throw new Error(data.error || "AI request failed.");
             }
 
-            thinking.querySelector("p").textContent = data.answer;
+            renderMessage(thinking.querySelector(".chat-content"), data.answer);
             history.push({ role: "assistant", content: data.answer });
             provider.textContent = data.provider === "openai-rag"
                 ? "LLM RAG"
                 : "Local RAG";
             renderSources(data.items);
         } catch (error) {
-            thinking.querySelector("p").textContent = "I could not answer that request right now. Please try again.";
+            renderMessage(
+                thinking.querySelector(".chat-content"),
+                "I could not answer that request right now. Please try again."
+            );
             provider.textContent = "Error";
+        } finally {
+            form.classList.remove("is-loading");
+            form.querySelector("button").disabled = false;
         }
     }
 
@@ -110,7 +169,22 @@ document.addEventListener("DOMContentLoaded", function () {
         addMessage("user", message);
         history.push({ role: "user", content: message });
         questionInput.value = "";
+        questionInput.style.height = "";
+        form.classList.add("is-loading");
+        form.querySelector("button").disabled = true;
         askAssistant(message);
+    });
+
+    questionInput.addEventListener("input", function () {
+        questionInput.style.height = "auto";
+        questionInput.style.height = `${Math.min(questionInput.scrollHeight, 180)}px`;
+    });
+
+    questionInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            form.requestSubmit();
+        }
     });
 
     chips.forEach(function (chip) {

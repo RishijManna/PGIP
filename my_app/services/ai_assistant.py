@@ -3,6 +3,7 @@ import logging
 import re
 import urllib.error
 import urllib.request
+from datetime import date
 
 from django.conf import settings
 
@@ -16,6 +17,7 @@ from .ai_recommendation import (
     recommend_schemes,
     scheme_to_document,
 )
+from .seed_rag import retrieve_from_seed_rag
 
 try:
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -41,6 +43,7 @@ KNOWN_COMPANIES = [
     "HCL",
     "Tech Mahindra",
 ]
+STALE_DATA_DAYS = 90
 
 
 def normalize_text(text):
@@ -59,6 +62,29 @@ def item_title(item, item_type):
         return f"Scheme: {item.name}"
 
     return f"Job: {item.title}"
+
+
+def days_since(value):
+    if not value:
+        return None
+
+    return (date.today() - value).days
+
+
+def freshness_note(item):
+    data_age = days_since(getattr(item, "data_as_of", None))
+    synced_age = days_since(
+        getattr(getattr(item, "last_synced_at", None), "date", lambda: None)()
+    )
+    age = data_age if data_age is not None else synced_age
+
+    if age is None:
+        return "No source freshness date is available; verify before applying."
+
+    if age > STALE_DATA_DAYS:
+        return f"Source data is {age} days old; verify the current deadline and rules."
+
+    return f"Source data is {age} days old."
 
 
 def profile_payload(profile):
@@ -261,6 +287,9 @@ def serialize_item(item, item_type, profile):
         }
 
     body["ai_explanation"] = explanation
+    body["source_name"] = getattr(item, "source_name", "")
+    body["source_url"] = getattr(item, "source_url", body.get("source_url", ""))
+    body["freshness_note"] = freshness_note(item)
     return body
 
 
@@ -403,6 +432,17 @@ def retrieve_relevant_items(profile, query, exams, schemes, jobs=None, limit=MAX
     exams = list(exams)
     schemes = list(schemes)
     focus = query_focus(query)
+    rag_focus = focus if focus in {"exam", "scheme", "job"} else "general"
+    seed_rag_rows = retrieve_from_seed_rag(
+        profile,
+        query,
+        focus=rag_focus,
+        limit=limit,
+    )
+
+    if seed_rag_rows:
+        return seed_rag_rows
+
     rows = candidate_rows(profile, focus, exams, schemes, jobs, query)
 
     if not rows:
@@ -482,12 +522,15 @@ def conversation_history(history):
 
 def build_system_prompt():
     return (
-        "You are a career guidance assistant for jobs, exams, skills, internships, "
-        "government schemes, and education guidance. Use the user's profile and the "
-        "retrieved portal records to give personalized recommendations. Respond "
-        "naturally. Do not repeat fixed template messages. If data is missing, ask "
-        "for one specific missing field politely. Never suggest irrelevant exams or "
-        "jobs. Stay accurate and grounded in the supplied profile and retrieved data."
+        "You are PGIP AI, a careful career and opportunity advisor. Match the quality "
+        "of a strong consumer AI assistant: answer directly, explain tradeoffs, and "
+        "make the next step obvious. Use only the supplied user profile and retrieved "
+        "portal records for factual claims about opportunities. Include source names, "
+        "freshness warnings, deadlines, confidence, and document guidance when useful. "
+        "If the user asks for comparison, compare options with a recommendation and "
+        "reasoning. If data is missing, ask for the one highest-impact missing field. "
+        "Do not invent deadlines, salaries, eligibility, or links. Never suggest "
+        "irrelevant exams, schemes, or jobs."
     )
 
 
@@ -579,6 +622,30 @@ def call_openai_llm(messages):
     return normalize_text(content), None
 
 
+def item_deadline_text(item):
+    return (
+        item.get("registration_window")
+        or item.get("date")
+        or "Not listed"
+    )
+
+
+def item_action_text(item):
+    if item["type"] == "job":
+        return "Open the role details, compare skills against your resume, and apply only after verifying the official source."
+
+    if item["type"] == "scheme":
+        return "Check eligibility, prepare the listed documents, and verify the application window on the official source."
+
+    return "Review the syllabus, confirm the notification dates, and add the exam deadline to your calendar."
+
+
+def strongest_factor(item):
+    explanation = item.get("ai_explanation", {})
+    factors = explanation.get("matching_factors") or []
+    return factors[0] if factors else "It overlaps with your saved profile and query."
+
+
 def local_grounded_answer(query, context_items, profile=None):
     profile = profile or object()
     profile_data = profile_payload(profile)
@@ -638,67 +705,104 @@ def local_grounded_answer(query, context_items, profile=None):
         return "\n".join(lines)
 
     if focus == "job":
-        lines = [
-            f"Based on your profile, I would prioritize job tracks aligned with {profile_data['skills']} rather than generic portals.",
-            "",
+        opener = (
+            "Here is the practical shortlist I would start with based on your saved "
+            f"skills ({profile_data['skills']}) and academic profile."
+        )
+        next_steps = [
+            "Tune your resume headline and projects around the skills repeated in the top matches.",
+            "Apply first to roles with the closest skill overlap instead of broad portals.",
+            "Before applying, verify the official link, deadline, compensation, bond, and location."
         ]
     elif focus == "scheme":
-        lines = [
-            "Based on your current profile, these scheme directions look the most relevant right now.",
-            "",
+        opener = (
+            "These are the most relevant scheme directions from the portal records. "
+            "I am prioritizing eligibility fit, documents, location, and benefit clarity."
+        )
+        next_steps = [
+            "Prepare Aadhaar or government ID, bank details, education proof, and income/category certificates if applicable.",
+            "Check the official source for the latest deadline and benefit amount.",
+            "Update your income, caste/category, gender, and location in the profile for sharper eligibility judgement."
         ]
     elif focus == "exam":
-        lines = [
-            "Based on your current profile, these exam directions look the most relevant right now.",
-            "",
+        opener = (
+            "These exam options look most relevant from the current records. "
+            "I would choose based on eligibility, timeline, and how close the exam is to your career goal."
+        )
+        next_steps = [
+            "Pick one primary exam and one backup instead of preparing for everything at once.",
+            "Add dates to the calendar and build a weekly mock-test schedule.",
+            "Verify the current official notification before paying any fee."
         ]
     else:
-        lines = [
-            "Here is a profile-aware answer using the current portal data and your saved academic details.",
-            "",
+        opener = (
+            "I searched the opportunity records against your profile and query. "
+            "Here is the most useful answer I can give from the available data."
+        )
+        next_steps = [
+            "Open the strongest match first and verify it from the source.",
+            "Use the confidence notes to decide whether to apply now or gather more documents.",
+            "Ask a narrower follow-up if you want a comparison between two options."
         ]
+
+    lines = [opener, ""]
 
     if context_items:
-        lines.append("Most relevant matches right now:")
-        lines.append("")
-
-        for index, item in enumerate(context_items[:4], start=1):
-            explanation = item["ai_explanation"]
-            summary_bits = [
-                f"{index}. {item['name']} ({item['type']})",
-                f"   Why it fits: {explanation['matching_factors'][0]}",
-                f"   Confidence: {explanation['confidence']}% - {explanation['verdict']}",
-            ]
-
-            if item["type"] == "job":
-                summary_bits.append(
-                    f"   Compensation: {item.get('compensation', 'Not listed')}"
-                )
-                summary_bits.append(
-                    f"   Registration: {item.get('registration_window', 'Not listed')}"
-                )
-            elif item["type"] in {"exam", "scheme"}:
-                summary_bits.append(
-                    f"   Eligibility: {item.get('eligibility', 'Not listed')}"
-                )
-                summary_bits.append(
-                    f"   Date: {item.get('date', 'Not listed')}"
-                )
-
-            lines.extend(summary_bits)
-    else:
+        top_item = context_items[0]
+        top_explanation = top_item["ai_explanation"]
         lines.extend(
             [
-                "I do not see a strong direct portal record for that question right now.",
-                "I would narrow the answer further using your education, skills, location, and the exact role or exam name you want to target.",
+                "Best answer:",
+                (
+                    f"I would start with {top_item['name']} because {strongest_factor(top_item)} "
+                    f"Confidence is {top_explanation['confidence']}% ({top_explanation['verdict']})."
+                ),
+                "",
+                "Top matches:",
             ]
         )
 
+        for index, item in enumerate(context_items[:5], start=1):
+            explanation = item["ai_explanation"]
+            lines.extend(
+                [
+                    f"{index}. {item['name']} ({item['type']})",
+                    f"   Why: {strongest_factor(item)}",
+                    f"   Fit: {explanation['confidence']}% - {explanation['verdict']}",
+                    f"   Eligibility/date: {item.get('eligibility', 'Not listed')} | {item_deadline_text(item)}",
+                ]
+            )
+
+            if item["type"] == "job":
+                lines.append(
+                    f"   Pay/skills: {item.get('compensation', 'Not listed')} | {item.get('required_skills', 'Not listed')}"
+                )
+            elif item["type"] == "scheme":
+                lines.append(
+                    f"   Documents: {item.get('required_documents', 'Check official source') or 'Check official source'}"
+                )
+
+            source_name = item.get("source_name") or "Portal record"
+            source_url = item.get("source_url") or "no source URL listed"
+            lines.extend(
+                [
+                    f"   Source: {source_name} - {source_url}",
+                    f"   Freshness: {item.get('freshness_note')}",
+                    f"   Action: {item_action_text(item)}",
+                ]
+            )
+    else:
+        lines.extend(
+            [
+                "I could not find a strong grounded match in the portal records for that exact question.",
+                "Try naming a target role, exam, scheme, location, or skill so I can retrieve a tighter set of records.",
+            ]
+        )
+
+    lines.extend(["", "Profile signals used:"])
     lines.extend(
         [
-            "",
-            "Profile signals I used:",
-            f"- Education / degree: {profile_data['education']} / {profile_data['degree']}",
+            f"- Education/degree: {profile_data['education']} / {profile_data['degree']}",
             f"- CGPA: {profile_data['cgpa']}",
             f"- Skills: {profile_data['skills']}",
             f"- Location: {profile_data['location']}",
@@ -706,48 +810,22 @@ def local_grounded_answer(query, context_items, profile=None):
         ]
     )
 
-    if focus == "job":
-        lines.extend(
-            [
-                "",
-                "Suggested next steps:",
-                "- Keep backend-friendly resume projects visible.",
-                "- Strengthen aptitude, SQL, DBMS, OOP, and interview communication for off-campus hiring.",
-                "- Apply first to roles closest to Python, Django, SQL, Java, and DBMS rather than broad portals.",
-            ]
-        )
-    elif focus == "scheme":
-        lines.extend(
-            [
-                "",
-                "Suggested next steps:",
-                "- Check eligibility carefully against education, income, and category rules.",
-                "- Keep Aadhaar, marksheets, bank details, and any income/category documents ready.",
-            ]
-        )
-    elif focus == "exam":
-        lines.extend(
-            [
-                "",
-                "Suggested next steps:",
-                "- Shortlist one or two target exams instead of spreading preparation too wide.",
-                "- Build a weekly plan around syllabus, mocks, and previous-year questions.",
-            ]
-        )
+    lines.extend(["", "Recommended next steps:"])
+    lines.extend(f"- {step}" for step in next_steps)
 
     if missing:
         lines.extend(
             [
                 "",
-                "To improve the next answer, add this profile field:",
-                f"- {missing[0]}",
+                "Most useful profile update:",
+                f"- Add your {missing[0]} so I can judge eligibility more accurately.",
             ]
         )
 
     lines.extend(
         [
             "",
-            "Verify final eligibility, deadlines, and official application rules from the linked source before applying.",
+            "Important: I am grounding this in the portal/RAG records. Always verify final eligibility, dates, fees, and application rules on the official source before applying.",
         ]
     )
 
@@ -816,6 +894,9 @@ def answer_question(profile, query, exams, schemes, jobs=None, history=None):
             "id": item.id,
             "category": getattr(item, "category", getattr(item, "sector", "")),
             "location": item.location,
+            "source_name": getattr(item, "source_name", ""),
+            "source_url": getattr(item, "source_url", ""),
+            "freshness_note": freshness_note(item),
             "date": str(
                 getattr(item, "date", "")
                 or getattr(item, "effective_deadline", "")
@@ -825,6 +906,11 @@ def answer_question(profile, query, exams, schemes, jobs=None, history=None):
             "compensation": item.compensation_summary if item_type == "job" else "",
             "registration_window": item.registration_window if item_type == "job" else "",
             "confidence": build_eligibility_explanation(profile, item, item_type)["confidence"],
+            "confidence_reason": "; ".join(
+                build_eligibility_explanation(profile, item, item_type)[
+                    "matching_factors"
+                ][:2]
+            ),
         }
         for item_type, item in relevant
     ]

@@ -1,6 +1,16 @@
 from django.contrib import admin
+from django.core.management import call_command
 
 from .models import Document, Exam, JobOpportunity, Scheme, Task, UserProfile
+
+
+@admin.action(description="Sync source-backed exams, schemes, and opportunities")
+def sync_source_backed_records(modeladmin, request, queryset):
+    call_command("sync_real_opportunities", verbosity=0)
+    modeladmin.message_user(
+        request,
+        "Source-backed exams, schemes, and opportunities were synced.",
+    )
 
 
 @admin.register(Exam)
@@ -16,6 +26,7 @@ class ExamAdmin(admin.ModelAdmin):
         "registration_end_date",
         "source_name",
     ]
+    actions = [sync_source_backed_records]
 
 
 @admin.register(Scheme)
@@ -30,6 +41,7 @@ class SchemeAdmin(admin.ModelAdmin):
         "registration_end_date",
         "source_name",
     ]
+    actions = [sync_source_backed_records]
 
 
 @admin.register(JobOpportunity)
@@ -46,6 +58,7 @@ class JobOpportunityAdmin(admin.ModelAdmin):
         "compensation_type",
         "source_name",
     ]
+    actions = [sync_source_backed_records]
 
 
 admin.site.register(Task)

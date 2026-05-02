@@ -3,15 +3,15 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.utils.html import escape
+from django.utils.dateparse import parse_date
 from django.core.mail import send_mail
-from django.core.management import call_command
 from django.http import JsonResponse
-from django.db.models import F
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.db.models import F, Q
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 from datetime import datetime
 from calendar import monthrange
-from io import StringIO
 import random
 import json
 from .forms import UserForm, UserProfileForm
@@ -23,28 +23,63 @@ from django.contrib import messages
 # Dummy data for jobs and schemes
 DUMMY_SCHEMES = [f"Scheme {i}" for i in range(1,83)]
 DUMMY_JOBS = [f"Job {i}" for i in range(1,51)]
-
-# Helper function to create calendar reminders
-def ensure_source_backed_records():
-    if (
-        Exam.objects.exists()
-        and Scheme.objects.exists()
-        and JobOpportunity.objects.exists()
-    ):
-        return
-
-    call_command(
-        "sync_real_opportunities",
-        verbosity=0,
-        stdout=StringIO(),
-    )
-
+OTP_RESEND_COOLDOWN_SECONDS = 60
+OTP_MAX_SENDS_PER_HOUR = 5
+OTP_MAX_VERIFY_ATTEMPTS = 5
+OTP_WINDOW_SECONDS = 60 * 60
 
 def clear_personalization_state(request):
     for key in [
         "ai_assistant_history",
         "ai_recommendations",
         "ai_profile_snapshot",
+    ]:
+        request.session.pop(key, None)
+
+
+def session_window(request, key):
+    now = timezone.now().timestamp()
+    window = request.session.get(key, {"started_at": now, "count": 0})
+
+    if now - float(window.get("started_at", now)) > OTP_WINDOW_SECONDS:
+        window = {"started_at": now, "count": 0}
+
+    return window
+
+
+def increment_session_window(request, key):
+    window = session_window(request, key)
+    window["count"] = int(window.get("count", 0)) + 1
+    request.session[key] = window
+    request.session.modified = True
+    return window
+
+
+def can_send_otp(request):
+    now = timezone.now().timestamp()
+    last_sent_at = request.session.get("otp_last_sent_at")
+
+    if last_sent_at and now - float(last_sent_at) < OTP_RESEND_COOLDOWN_SECONDS:
+        return False, "Please wait before requesting another OTP."
+
+    window = session_window(request, "otp_send_window")
+    if int(window.get("count", 0)) >= OTP_MAX_SENDS_PER_HOUR:
+        return False, "Too many OTP requests. Please try again later."
+
+    return True, ""
+
+
+def record_otp_sent(request):
+    request.session["otp_last_sent_at"] = timezone.now().timestamp()
+    increment_session_window(request, "otp_send_window")
+
+
+def reset_otp_session_state(request):
+    for key in [
+        "otp_last_sent_at",
+        "otp_send_window",
+        "otp_verify_window",
+        "user_id",
     ]:
         request.session.pop(key, None)
 
@@ -59,10 +94,28 @@ def create_calendar_reminder(user, title, date):
         return True
     return False
 
+
+def suggested_document_categories(profile, documents):
+    uploaded = {str(doc.category or "").lower() for doc in documents}
+    suggestions = []
+
+    checks = [
+        ("10th Marksheet", profile.class_10_percentage),
+        ("12th Marksheet", profile.class_12_percentage),
+        ("Degree/Certificate", profile.education in {"Undergraduate", "Postgraduate", "PhD"}),
+        ("Income Certificate", profile.income),
+        ("Caste Certificate", profile.caste and profile.caste != "General"),
+        ("Resume", profile.skills),
+    ]
+
+    for category, needed in checks:
+        if needed and category.lower() not in uploaded:
+            suggestions.append(category)
+
+    return suggestions
+
 # Dashboard
 def dashboard(request):
-    ensure_source_backed_records()
-
     schemes = Scheme.objects.all()
     exams = Exam.objects.all()
     jobs = JobOpportunity.objects.all()
@@ -144,60 +197,107 @@ def dashboard(request):
 
 # Search Feature
 def search_results(request):
-    ensure_source_backed_records()
+    query = request.GET.get('q', '').strip()
+    active_only = request.GET.get("active", "") == "1"
+    deadline_from = request.GET.get("deadline_from", "")
+    deadline_to = request.GET.get("deadline_to", "")
+    deadline_from_date = parse_date(deadline_from) if deadline_from else None
+    deadline_to_date = parse_date(deadline_to) if deadline_to else None
 
-    query = request.GET.get('q', '')
+    if any([query, active_only, deadline_from, deadline_to]):
+        request.session["saved_search_filters"] = {
+            "q": query,
+            "active": "1" if active_only else "",
+            "deadline_from": deadline_from,
+            "deadline_to": deadline_to,
+        }
+
     exams = Exam.objects.none()
     schemes = Scheme.objects.none()
     jobs = JobOpportunity.objects.none()
 
     if query:
         exams = Exam.objects.filter(
-            name__icontains=query
-        ) | Exam.objects.filter(
-            category__icontains=query
-        ) | Exam.objects.filter(
-            location__icontains=query
-        ) | Exam.objects.filter(
-            conducting_body__icontains=query
-        ) | Exam.objects.filter(
-            required_skills__icontains=query
-        ) | Exam.objects.filter(
-            salary_package__icontains=query
+            Q(name__icontains=query)
+            | Q(category__icontains=query)
+            | Q(location__icontains=query)
+            | Q(conducting_body__icontains=query)
+            | Q(required_skills__icontains=query)
+            | Q(salary_package__icontains=query)
         )
 
         schemes = Scheme.objects.filter(
-            name__icontains=query
-        ) | Scheme.objects.filter(
-            category__icontains=query
-        ) | Scheme.objects.filter(
-            location__icontains=query
-        ) | Scheme.objects.filter(
-            benefits__icontains=query
-        ) | Scheme.objects.filter(
-            benefit_amount__icontains=query
-        ) | Scheme.objects.filter(
-            required_documents__icontains=query
+            Q(name__icontains=query)
+            | Q(category__icontains=query)
+            | Q(location__icontains=query)
+            | Q(benefits__icontains=query)
+            | Q(benefit_amount__icontains=query)
+            | Q(required_documents__icontains=query)
         )
 
         jobs = JobOpportunity.objects.filter(
-            title__icontains=query
-        ) | JobOpportunity.objects.filter(
-            company_or_org__icontains=query
-        ) | JobOpportunity.objects.filter(
-            sector__icontains=query
-        ) | JobOpportunity.objects.filter(
-            required_skills__icontains=query
-        ) | JobOpportunity.objects.filter(
-            location__icontains=query
+            Q(title__icontains=query)
+            | Q(company_or_org__icontains=query)
+            | Q(sector__icontains=query)
+            | Q(required_skills__icontains=query)
+            | Q(location__icontains=query)
         )
+
+    today = timezone.localdate()
+    if active_only:
+        exams = exams.filter(Q(registration_end_date__gte=today) | Q(date__gte=today))
+        schemes = schemes.filter(Q(registration_end_date__gte=today) | Q(date__gte=today))
+        jobs = jobs.filter(Q(registration_end_date__gte=today) | Q(deadline__gte=today))
+
+    if deadline_from_date:
+        exams = exams.filter(Q(registration_end_date__gte=deadline_from_date) | Q(date__gte=deadline_from_date))
+        schemes = schemes.filter(Q(registration_end_date__gte=deadline_from_date) | Q(date__gte=deadline_from_date))
+        jobs = jobs.filter(Q(registration_end_date__gte=deadline_from_date) | Q(deadline__gte=deadline_from_date))
+
+    if deadline_to_date:
+        exams = exams.filter(Q(registration_end_date__lte=deadline_to_date) | Q(date__lte=deadline_to_date))
+        schemes = schemes.filter(Q(registration_end_date__lte=deadline_to_date) | Q(date__lte=deadline_to_date))
+        jobs = jobs.filter(Q(registration_end_date__lte=deadline_to_date) | Q(deadline__lte=deadline_to_date))
+
+    exams = exams.distinct().order_by(F("registration_end_date").asc(nulls_last=True), F("date").asc(nulls_last=True), "name")
+    schemes = schemes.distinct().order_by(F("registration_end_date").asc(nulls_last=True), F("date").asc(nulls_last=True), "name")
+    jobs = jobs.distinct().order_by(F("registration_end_date").asc(nulls_last=True), F("deadline").asc(nulls_last=True), "title")
+
+    exams_count = exams.count()
+    schemes_count = schemes.count()
+    jobs_count = jobs.count()
+    page_number = request.GET.get("page")
 
     context = {
         'query': query,
-        'exams': exams.distinct(),
-        'schemes': schemes.distinct(),
-        'jobs': jobs.distinct()
+        'exams': Paginator(exams, 12).get_page(page_number),
+        'schemes': Paginator(schemes, 12).get_page(page_number),
+        'jobs': Paginator(jobs, 12).get_page(page_number),
+        'exams_count': exams_count,
+        'schemes_count': schemes_count,
+        'jobs_count': jobs_count,
+        'active_only': active_only,
+        'deadline_from': deadline_from,
+        'deadline_to': deadline_to,
+        'saved_filters': request.session.get("saved_search_filters", {}),
     }
+    context["search_has_previous"] = (
+        context["exams"].has_previous()
+        or context["schemes"].has_previous()
+        or context["jobs"].has_previous()
+    )
+    context["search_has_next"] = (
+        context["exams"].has_next()
+        or context["schemes"].has_next()
+        or context["jobs"].has_next()
+    )
+    context["search_page_number"] = max(
+        context["exams"].number,
+        context["schemes"].number,
+        context["jobs"].number,
+    )
+    context["search_previous_page_number"] = max(context["search_page_number"] - 1, 1)
+    context["search_next_page_number"] = context["search_page_number"] + 1
     return render(request, 'search_results.html', context)
 
 def demo_register(request, item_type, item_id):
@@ -258,7 +358,10 @@ def calendar_view(request):
                 task.save()
                 return redirect('calendar')
         elif 'delete' in request.POST:
-            Task.objects.filter(id=request.POST.get('task_id')).delete()
+            Task.objects.filter(
+                id=request.POST.get('task_id'),
+                user=request.user,
+            ).delete()
             return redirect('calendar')
     else:
         form = TaskForm()
@@ -287,14 +390,38 @@ def login_request(request):
     if request.method == 'POST':
         form = EmailForm(request.POST)
         if form.is_valid():
+            allowed, error = can_send_otp(request)
+            if not allowed:
+                form.add_error(None, error)
+                return render(request, 'login.html', {'form': form})
+
             email = form.cleaned_data['email']
             user, _ = User.objects.get_or_create(username=email, email=email)
             send_otp_email(user)
+            record_otp_sent(request)
             request.session['user_id'] = user.id
             return redirect('verify_otp')
     else:
         form = EmailForm()
     return render(request, 'login.html', {'form': form})
+
+
+@require_POST
+def resend_otp(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return redirect("login")
+
+    allowed, error = can_send_otp(request)
+    if not allowed:
+        messages.error(request, error)
+        return redirect("verify_otp")
+
+    user = get_object_or_404(User, id=user_id)
+    send_otp_email(user)
+    record_otp_sent(request)
+    messages.success(request, "A new OTP has been sent.")
+    return redirect("verify_otp")
 
 def verify_otp(request):
     user_id = request.session.get('user_id')
@@ -306,6 +433,11 @@ def verify_otp(request):
     if request.method == 'POST':
         form = OTPForm(request.POST)
         if form.is_valid():
+            attempts = session_window(request, "otp_verify_window")
+            if int(attempts.get("count", 0)) >= OTP_MAX_VERIFY_ATTEMPTS:
+                form.add_error(None, "Too many failed attempts. Please request a new OTP.")
+                return render(request, 'otp.html', {'form': form})
+
             otp_input = form.cleaned_data['otp']
             try:
                 otp_obj = OTP.objects.get(user=user)
@@ -314,8 +446,11 @@ def verify_otp(request):
                         form.add_error(None, "OTP has expired. Please login again.")
                     else:
                         login(request, user)
+                        otp_obj.delete()
+                        reset_otp_session_state(request)
                         return redirect('dashboard')
                 else:
+                    increment_session_window(request, "otp_verify_window")
                     form.add_error('otp', "Invalid OTP.")
             except OTP.DoesNotExist:
                 form.add_error(None, "OTP not found. Please login again.")
@@ -418,42 +553,36 @@ def api_events(request):
 
     return JsonResponse(events, safe=False)
 
-@csrf_exempt
-def add_reminder(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        title = data.get("title")
-        date_str = data.get("date")
-        
-        # Convert string to date
-        date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        
-        # Check if reminder already exists
-        if Task.objects.filter(user=request.user, title=title, date=date).exists():
-            return JsonResponse({"status": "duplicate", "message": "Reminder already exists"})
-        
-        # Create new reminder
-        Task.objects.create(user=request.user, title=title, date=date)
-        return JsonResponse({"status": "success"})
-    
-    return JsonResponse({"status": "error", "message": "Invalid request method"})
-
-@csrf_exempt
 @login_required
-def delete_reminder(request, task_id):
-    if not request.user.is_authenticated:
-        return JsonResponse({"error": "Unauthorized"}, status=401)
+@require_POST
+def add_reminder(request):
+    try:
+        data = json.loads(request.body)
+        title = str(data.get("title", "")).strip()
+        date_str = data.get("date")
+        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({"status": "error", "message": "Invalid reminder payload"}, status=400)
 
+    if not title:
+        return JsonResponse({"status": "error", "message": "Title is required"}, status=400)
+
+    if Task.objects.filter(user=request.user, title=title, date=date).exists():
+        return JsonResponse({"status": "duplicate", "message": "Reminder already exists"})
+
+    Task.objects.create(user=request.user, title=title, date=date)
+    return JsonResponse({"status": "success"})
+
+@login_required
+@require_http_methods(["DELETE"])
+def delete_reminder(request, task_id):
     try:
         task = Task.objects.get(id=task_id, user=request.user)
     except Task.DoesNotExist:
         return JsonResponse({"error": "Reminder not found"}, status=404)
 
-    if request.method == "DELETE":
-        task.delete()
-        return JsonResponse({"status": "success"})
-
-    return JsonResponse({"error": "Invalid request method"}, status=400)
+    task.delete()
+    return JsonResponse({"status": "success"})
 
 
 # ------------------ Document Uploads ------------------
@@ -483,25 +612,25 @@ def delete_document(request, doc_id):
 
 
 # AJAX endpoints for exam and scheme details (can be removed if not used elsewhere)
-@csrf_exempt
+@require_GET
 def exam_detail(request, exam_id):
     try:
         exam = Exam.objects.get(id=exam_id)
         # Format the details in HTML with all available information
         details_html = f"""
         <div class="exam-details">
-            <h4>{exam.name}</h4>
+            <h4>{escape(exam.name)}</h4>
             <div class="details-section">
-                <p><strong>Type:</strong> {exam.exam_type}</p>
-                <p><strong>Category:</strong> {exam.category}</p>
-                <p><strong>Location:</strong> {exam.location}</p>
-                <p><strong>Mode:</strong> {exam.mode}</p>
-                <p><strong>Date:</strong> {exam.date}</p>
-                <p><strong>Eligibility:</strong> {exam.e_eligibility}</p>
+                <p><strong>Type:</strong> {escape(exam.exam_type)}</p>
+                <p><strong>Category:</strong> {escape(exam.category)}</p>
+                <p><strong>Location:</strong> {escape(exam.location)}</p>
+                <p><strong>Mode:</strong> {escape(exam.mode)}</p>
+                <p><strong>Date:</strong> {escape(exam.date)}</p>
+                <p><strong>Eligibility:</strong> {escape(exam.e_eligibility)}</p>
             </div>
             <div class="additional-info">
                 <h5>Additional Information</h5>
-                <p>{exam.additional_info}</p>
+                <p>{escape(exam.additional_info)}</p>
             </div>
         </div>
         """
@@ -512,26 +641,26 @@ def exam_detail(request, exam_id):
     except Exam.DoesNotExist:
         return JsonResponse({'error': 'Exam not found'}, status=404)
 
-@csrf_exempt
+@require_GET
 def scheme_detail(request, scheme_id):
     try:
         scheme = Scheme.objects.get(id=scheme_id)
         # Format the details in HTML with all available information
         details_html = f"""
         <div class="scheme-details">
-            <h4>{scheme.name}</h4>
+            <h4>{escape(scheme.name)}</h4>
             <div class="details-section">
-                <p><strong>Type:</strong> {scheme.scheme_type}</p>
-                <p><strong>Category:</strong> {scheme.category}</p>
-                <p><strong>Location:</strong> {scheme.location}</p>
-                <p><strong>Date:</strong> {scheme.date}</p>
-                <p><strong>Eligibility:</strong> {scheme.s_eligibility}</p>
-                <p><strong>Benefits:</strong> {scheme.benefits}</p>
-                <p><strong>Description:</strong> {scheme.description}</p>
+                <p><strong>Type:</strong> {escape(scheme.scheme_type)}</p>
+                <p><strong>Category:</strong> {escape(scheme.category)}</p>
+                <p><strong>Location:</strong> {escape(scheme.location)}</p>
+                <p><strong>Date:</strong> {escape(scheme.date)}</p>
+                <p><strong>Eligibility:</strong> {escape(scheme.s_eligibility)}</p>
+                <p><strong>Benefits:</strong> {escape(scheme.benefits)}</p>
+                <p><strong>Description:</strong> {escape(scheme.description)}</p>
             </div>
             <div class="additional-info">
                 <h5>Additional Information</h5>
-                <p>{scheme.additional_info}</p>
+                <p>{escape(scheme.additional_info)}</p>
             </div>
         </div>
         """
@@ -544,38 +673,40 @@ def scheme_detail(request, scheme_id):
 
 # Manual add to calendar view
 @login_required
+@require_POST
 def add_to_calendar(request):
-    if request.method == 'POST':
-        item_type = request.POST.get('item_type')
-        item_id = request.POST.get('item_id')
-        
-        if item_type == 'exam':
-            item = get_object_or_404(Exam, id=item_id)
-            title = f"Exam: {item.name}"
-            item_date = item.date
-            item_name = item.name
-        elif item_type == 'job':
-            item = get_object_or_404(JobOpportunity, id=item_id)
-            title = f"Job: {item.title}"
-            item_date = item.effective_deadline
-            item_name = item.title
-        else:  # scheme
-            item = get_object_or_404(Scheme, id=item_id)
-            title = f"Scheme: {item.name}"
-            item_date = item.date
-            item_name = item.name
-        
-        if not item_date:
-            messages.info(request, f"{item_name} has no listed date yet.")
-            return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+    item_type = request.POST.get('item_type')
+    item_id = request.POST.get('item_id')
 
-        created = create_calendar_reminder(request.user, title, item_date)
-        if created:
-            messages.success(request, f"Added {item_name} to your calendar!")
-        else:
-            messages.info(request, f"{item_name} is already in your calendar!")
-    
-    # Redirect back to the previous page
+    if item_type == 'exam':
+        item = get_object_or_404(Exam, id=item_id)
+        title = f"Exam: {item.name}"
+        item_date = item.date
+        item_name = item.name
+    elif item_type == 'job':
+        item = get_object_or_404(JobOpportunity, id=item_id)
+        title = f"Job: {item.title}"
+        item_date = item.effective_deadline
+        item_name = item.title
+    elif item_type == 'scheme':
+        item = get_object_or_404(Scheme, id=item_id)
+        title = f"Scheme: {item.name}"
+        item_date = item.date
+        item_name = item.name
+    else:
+        messages.error(request, "Invalid calendar item type.")
+        return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
+    if not item_date:
+        messages.info(request, f"{item_name} has no listed date yet.")
+        return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+
+    created = create_calendar_reminder(request.user, title, item_date)
+    if created:
+        messages.success(request, f"Added {item_name} to your calendar!")
+    else:
+        messages.info(request, f"{item_name} is already in your calendar!")
+
     return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
 
 # ------------------ Profile + Documents ------------------
@@ -615,6 +746,7 @@ def profile_view(request):
         "profile_form": profile_form,
         "doc_form": doc_form,
         "documents": documents,
+        "suggested_documents": suggested_document_categories(profile, documents),
     })
 
 from django.contrib.auth.decorators import login_required
@@ -631,8 +763,6 @@ from .services.ai_assistant import answer_question
 
 @login_required
 def recommendations_view(request):
-    ensure_source_backed_records()
-
     profile, _ = UserProfile.objects.get_or_create(
         user=request.user
     )
@@ -704,8 +834,6 @@ def recommendations_view(request):
 
 @login_required
 def ai_assistant_view(request):
-    ensure_source_backed_records()
-
     profile, _ = UserProfile.objects.get_or_create(
         user=request.user
     )
@@ -738,8 +866,6 @@ def ai_assistant_view(request):
 @login_required
 @require_POST
 def ai_assistant_api(request):
-    ensure_source_backed_records()
-
     try:
         payload = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:

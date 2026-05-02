@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 import dj_database_url
 from dotenv import load_dotenv
 
@@ -9,20 +10,24 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
+IS_TESTING = "test" in sys.argv
 
 # =====================================
 # Security
 # =====================================
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "unsafe-secret-key"
-)
-
-# DEBUG (True locally, False in production)
+# DEBUG is opt-in. Production must never inherit a debug/default secret setup.
 DEBUG = os.environ.get(
     "DEBUG",
-    "True"
+    "False"
 ).lower() == "true"
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+
+if not SECRET_KEY:
+    if DEBUG or IS_TESTING:
+        SECRET_KEY = "local-development-only-secret-key"
+    else:
+        raise RuntimeError("DJANGO_SECRET_KEY must be set when DEBUG is False.")
 
 # =====================================
 # Host settings (IMPORTANT)
@@ -31,6 +36,10 @@ ALLOWED_HOSTS = [
     "rishijmanna.pythonanywhere.com",
     "localhost",
     "127.0.0.1",
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://rishijmanna.pythonanywhere.com",
 ]
 
 # =====================================
@@ -172,6 +181,23 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # =====================================
 LOGIN_URL = '/login/'
 
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+
+if not DEBUG and not IS_TESTING:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "True").lower() == "true"
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+
 # =====================================
 # Email
 # =====================================
@@ -200,7 +226,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE", "https://api.openai.com/v1")
 OPENAI_TIMEOUT = int(os.environ.get("OPENAI_TIMEOUT", "20"))
-OPENAI_TEMPERATURE = float(os.environ.get("OPENAI_TEMPERATURE", "0.7"))
+OPENAI_TEMPERATURE = float(os.environ.get("OPENAI_TEMPERATURE", "0.25"))
 OPENAI_TOP_P = float(os.environ.get("OPENAI_TOP_P", "0.9"))
 
 # =====================================

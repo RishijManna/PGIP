@@ -13,6 +13,12 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
         <i class="fas fa-search search-icon"></i>
         <form method="get" action="{% url 'search_results' %}" style="display: flex; width: 100%;">
             <input type="text" name="q" placeholder="Search exams, schemes, jobs, skills..." value="{{ query|default:'' }}">
+            <input type="date" name="deadline_from" value="{{ deadline_from }}" title="Deadline from">
+            <input type="date" name="deadline_to" value="{{ deadline_to }}" title="Deadline to">
+            <label class="active-filter">
+                <input type="checkbox" name="active" value="1" {% if active_only %}checked{% endif %}>
+                Active only
+            </label>
             <button type="submit" class="search-btn">
                 <i class="fas fa-search"></i> Search
             </button>
@@ -31,15 +37,15 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
         <div class="results-stats">
             <span class="stat-exams">
                 <i class="fas fa-calendar-alt"></i>
-                <strong>{{ exams|length }}</strong> Exams found
+                <strong>{{ exams_count }}</strong> Exams found
             </span>
             <span class="stat-schemes">
                 <i class="fas fa-landmark"></i>
-                <strong>{{ schemes|length }}</strong> Schemes found
+                <strong>{{ schemes_count }}</strong> Schemes found
             </span>
             <span class="stat-jobs">
                 <i class="fas fa-briefcase"></i>
-                <strong>{{ jobs|length }}</strong> Jobs found
+                <strong>{{ jobs_count }}</strong> Jobs found
             </span>
         </div>
     </div>
@@ -249,6 +255,17 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
     
     <!-- Back to Dashboard -->
     <div class="back-button-container">
+        {% if search_has_previous or search_has_next %}
+        <div class="pagination-controls">
+            {% if search_has_previous %}
+            <a href="?q={{ query }}&active={% if active_only %}1{% endif %}&deadline_from={{ deadline_from }}&deadline_to={{ deadline_to }}&page={{ search_previous_page_number }}">Previous</a>
+            {% endif %}
+            <span>Page {{ search_page_number }}</span>
+            {% if search_has_next %}
+            <a href="?q={{ query }}&active={% if active_only %}1{% endif %}&deadline_from={{ deadline_from }}&deadline_to={{ deadline_to }}&page={{ search_next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
         <a href="{% url 'dashboard' %}" class="btn-outline">
             <i class="fas fa-arrow-left"></i> Back to Dashboard
         </a>
@@ -325,6 +342,22 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
         color: var(--text-primary);
         font-size: 1.25rem;
     }
+
+    .active-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin: 0 0.75rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .search-container input[type="date"] {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.55rem;
+        margin-left: 0.5rem;
+    }
     
     /* Results Section */
     .results-section {
@@ -340,6 +373,14 @@ Search Results{% if query %} for "{{ query }}"{% endif %}
     .back-button-container {
         text-align: center;
         margin: 2rem 0;
+    }
+
+    .pagination-controls {
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        align-items: center;
     }
     
     .btn-outline {

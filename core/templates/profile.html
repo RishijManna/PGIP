@@ -212,6 +212,15 @@ My Profile
             Document Management
         </h3>
 
+        {% if suggested_documents %}
+        <div class="document-suggestions">
+            <strong>Suggested next uploads:</strong>
+            {% for suggestion in suggested_documents %}
+            <span>{{ suggestion }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <form method="POST"
               enctype="multipart/form-data"
               class="upload-form">
@@ -227,6 +236,7 @@ My Profile
 
             <input type="file"
                    name="file"
+                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                    required>
 
             <button type="submit"
